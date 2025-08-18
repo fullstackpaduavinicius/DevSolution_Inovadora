@@ -89,7 +89,7 @@ export default function TrabalheConoscoPage() {
     dropRef.current?.classList.remove('ring-2', 'ring-accent');
   }, []);
 
-  // Não usamos os dados para envio de verdade agora; só feedback visual
+  // Envio visual (mock)
   const onSubmit = () => {
     setSent(true);
     setTimeout(() => setSent(false), 4000);
