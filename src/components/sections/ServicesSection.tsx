@@ -152,7 +152,6 @@ export default function ServicesSection() {
       };
       document.body.style.overflow = 'hidden';
       (document.body.style as any).touchAction = 'none'; // evita scroll em iOS/Android por trás
-      // foco inicial no conteúdo do modal/sheet
       setTimeout(() => dialogRef.current?.focus(), 0);
       return () => {
         document.body.style.overflow = original.overflow;
@@ -174,12 +173,10 @@ export default function ServicesSection() {
   const handleDragEnd = (_: any, info: { offset: { y: number }; velocity: { y: number } }) => {
     const dragged = info.offset.y;
     const velo = info.velocity.y;
-    // fecha se puxou o sheet para baixo o suficiente ou com velocidade alta
     if (dragged > 120 || velo > 800) {
       setOpenKey(null);
       y.set(0);
     } else {
-      // volta para posição original
       y.set(0);
     }
   };
@@ -264,34 +261,22 @@ export default function ServicesSection() {
               id={`dialog-${openKey}`}
               ref={dialogRef}
               tabIndex={-1}
-              // Mobile: bottom sheet; Desktop: modal central
               className={[
-                // base
-                'relative mx-auto bg-white text-primary shadow-xl',
-                'focus:outline-none',
-                // mobile sheet
+                'relative mx-auto bg-white text-primary shadow-xl focus:outline-none',
                 'w-full sm:w-auto',
-                'sm:rounded-2xl', // desktop arredondado total
-                'rounded-t-2xl', // mobile arredondado topo
-                // altura e scroll
-                // mobile: ocupa até ~85% da viewport com suporte a dvh; desktop: altura auto
+                'sm:rounded-2xl',
+                'rounded-t-2xl',
                 'sm:max-w-2xl',
+                // mobile: altura e rolagem interna
+                'overflow-hidden overscroll-contain',
+                // aplica altura de sheet somente no mobile
                 isMobile ? 'h-[85dvh]' : '',
-                // evitar scroll vazar do sheet
-                'overflow-hidden',
               ].join(' ')}
-              style={{
-                // impede que o scroll interno do sheet "puxe" o fundo (iOS/Android)
-                overscrollBehavior: 'contain',
-              }}
-              // impedir fechamento ao clicar dentro
               onClick={(e) => e.stopPropagation()}
-              // animações diferentes mobile/desktop
               initial={isMobile ? { y: 40, opacity: 1 } : { y: 20, opacity: 0 }}
               animate={isMobile ? { y: 0, opacity: 1 } : { y: 0, opacity: 1 }}
               exit={isMobile ? { y: 60, opacity: 1 } : { y: 10, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-              // drag no mobile
               drag={isMobile ? 'y' : false}
               dragDirectionLock
               dragConstraints={{ top: 0, bottom: 0 }}
@@ -299,7 +284,7 @@ export default function ServicesSection() {
               style={{ y }}
               onDragEnd={isMobile ? handleDragEnd : undefined}
             >
-              {/* Header do sheet (mobile) com "handle" de toque fácil */}
+              {/* Header do sheet (mobile) com "handle" */}
               <div className="sm:hidden sticky top-0 z-10 bg-white">
                 <button
                   className="absolute top-3 right-3 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
@@ -309,10 +294,7 @@ export default function ServicesSection() {
                   <FaTimes />
                 </button>
                 <div className="flex flex-col items-center pt-3 pb-2">
-                  <span
-                    className="h-1.5 w-12 rounded-full bg-gray-300"
-                    aria-hidden
-                  />
+                  <span className="h-1.5 w-12 rounded-full bg-gray-300" aria-hidden />
                 </div>
               </div>
 
@@ -329,7 +311,6 @@ export default function ServicesSection() {
               <div
                 className={[
                   'p-6 sm:p-8',
-                  // mobile: o conteúdo fica rolável dentro do sheet
                   isMobile ? 'overflow-y-auto h-full pb-[max(env(safe-area-inset-bottom),16px)]' : '',
                 ].join(' ')}
               >
