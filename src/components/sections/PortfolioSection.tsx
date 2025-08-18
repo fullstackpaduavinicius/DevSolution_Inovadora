@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import {
   FaStore, FaShoppingCart, FaRocket, FaLightbulb,
   FaWhatsapp, FaTimes
@@ -80,6 +80,7 @@ export default function WhatWeDoSection() {
   const [selected, setSelected] = useState<string>(OFFERS[0].id);      // painel desktop
   const [mobileOpen, setMobileOpen] = useState<string | null>(null);   // modal mobile
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const y = useMotionValue(0);
 
   const waHref = useMemo(() => {
     const phone = '5579998807035';
@@ -88,13 +89,18 @@ export default function WhatWeDoSection() {
     return `https://wa.me/${phone}?text=${text}&${utms}`;
   }, []);
 
-  // Fechar modal com ESC (sem travar o body)
+  // Fechar modal com ESC e travar o fundo enquanto aberto
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(null); };
     document.addEventListener('keydown', onKey);
     if (mobileOpen) {
-      // foca no container do dialog para acessibilidade
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
       setTimeout(() => dialogRef.current?.focus(), 0);
+      return () => {
+        document.body.style.overflow = prev;
+        document.removeEventListener('keydown', onKey);
+      };
     }
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileOpen]);
@@ -104,11 +110,21 @@ export default function WhatWeDoSection() {
 
   const handleCardClick = (id: string) => {
     if (isMobile) {
-      // Se já estiver com modal aberto, não abre outro — exige fechar antes.
       if (mobileOpen) return;
       setMobileOpen(id);
     } else {
       setSelected(id);
+    }
+  };
+
+  const handleDragEnd = (_: any, info: { offset: { y: number }; velocity: { y: number } }) => {
+    const dragged = info.offset.y;
+    const velo = info.velocity.y;
+    if (dragged > 120 || velo > 800) {
+      setMobileOpen(null);
+      y.set(0);
+    } else {
+      y.set(0);
     }
   };
 
@@ -161,7 +177,7 @@ export default function WhatWeDoSection() {
         </motion.div>
       </div>
 
-      {/* Modal MOBILE */}
+      {/* Modal MOBILE (bottom sheet compacto + swipe-down + accordion + footer CTA) */}
       <AnimatePresence>
         {mobileActive && (
           <motion.div
@@ -171,35 +187,71 @@ export default function WhatWeDoSection() {
             exit={{ opacity: 0 }}
             role="dialog"
             aria-modal="true"
-            onClick={() => setMobileOpen(null)} // permite fechar por backdrop; remova se quiser só pelo botão
+            onClick={() => setMobileOpen(null)}
           >
+            {/* Backdrop */}
             <div className="absolute inset-0 bg-black/60" />
 
+            {/* Sheet container */}
             <motion.div
               ref={dialogRef}
               tabIndex={-1}
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-              className="relative w-full max-w-md mx-auto bg-white text-primary rounded-t-2xl shadow-xl p-6"
+              className={[
+                'relative bg-white text-primary shadow-xl focus:outline-none',
+                'w-[95%] max-w-md mx-auto',
+                'max-h-[70dvh]',
+                'rounded-t-xl',
+                'flex flex-col overscroll-contain',
+              ].join(' ')}
               onClick={(e) => e.stopPropagation()}
+              initial={{ y: 28, opacity: 1 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 48, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              drag="y"
+              dragDirectionLock
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.55 }}
+              style={{ y }}
+              onDragEnd={handleDragEnd}
             >
-              {/* Header do modal com botão Fechar (claro e grande) */}
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-bold">{mobileActive.title}</h4>
+              {/* Header compacto + handle + X */}
+              <div className="sticky top-0 z-10 bg-white">
                 <button
-                  className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-100 hover:bg-gray-200"
+                  className="absolute top-2 right-2 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
                   onClick={() => setMobileOpen(null)}
                   aria-label="Fechar"
                 >
                   <FaTimes />
-                  Fechar
                 </button>
+                <div className="flex flex-col items-center pt-2 pb-2">
+                  <span className="h-1.5 w-10 rounded-full bg-gray-300" aria-hidden />
+                </div>
+                <div className="px-4 pb-2">
+                  <h4 className="text-lg font-bold">{mobileActive.title}</h4>
+                  <p className="text-secondary text-sm">{mobileActive.subtitle}</p>
+                </div>
               </div>
-              <p className="text-secondary mb-4">{mobileActive.subtitle}</p>
 
-              <DetailsBlock offer={mobileActive} waHref={waHref} compact />
+              {/* Conteúdo rolável com accordions (compact) */}
+              <div
+                className="min-h-0 flex-1 overflow-y-auto px-4 pb-20"
+                style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+              >
+                <DetailsBlock offer={mobileActive} waHref={waHref} compact />
+              </div>
+
+              {/* Footer sticky (apenas CTA principal) */}
+              <div className="sticky bottom-0 z-10 bg-white/95 backdrop-blur border-t px-3 py-2">
+                <a
+                  href={waHref}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
+                  data-gtag="click_whatsapp"
+                >
+                  <FaWhatsapp className="text-base" />
+                  WhatsApp
+                </a>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -218,19 +270,58 @@ function DetailsBlock({
   waHref: string;
   compact?: boolean;
 }) {
+  // Versão compacta (MOBILE): accordions e sem CTA interno (CTA fica no footer do sheet)
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        <details className="rounded-lg border p-2">
+          <summary className="font-semibold text-sm cursor-pointer select-none">Resultados que você pode esperar</summary>
+          <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+            {offer.outcomes.map((item, i) => <li key={i}>{item}</li>)}
+          </ul>
+        </details>
+
+        <details className="rounded-lg border p-2">
+          <summary className="font-semibold text-sm cursor-pointer select-none">O que entregamos</summary>
+          <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+            {offer.solutions.map((item, i) => <li key={i}>{item}</li>)}
+          </ul>
+          <div className="mt-3">
+            <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1">Stack</p>
+            <div className="flex flex-wrap gap-2">
+              {offer.stack.map((t, i) => (
+                <span key={i} className="px-2.5 py-1 rounded-full bg-white text-primary text-xs shadow-sm">
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        </details>
+
+        <details className="rounded-lg border p-2">
+          <summary className="font-semibold text-sm cursor-pointer select-none">KPIs típicos</summary>
+          <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+            {offer.kpis.map((k, i) => <li key={i}>{k}</li>)}
+          </ul>
+        </details>
+
+        <p className="text-secondary text-xs">Aracaju-SE • Atendemos todo o Brasil</p>
+      </div>
+    );
+  }
+
+  // Versão completa (DESKTOP)
   return (
     <div>
-      {!compact && (
-        <header className="mb-5">
-          <div className="flex items-center gap-3 mb-1">
-            {offer.icon}
-            <h4 className="text-xl font-bold text-primary">{offer.title}</h4>
-          </div>
-          <p className="text-secondary">{offer.subtitle}</p>
-        </header>
-      )}
+      <header className="mb-5">
+        <div className="flex items-center gap-3 mb-1">
+          {offer.icon}
+          <h4 className="text-xl font-bold text-primary">{offer.title}</h4>
+        </div>
+        <p className="text-secondary">{offer.subtitle}</p>
+      </header>
 
-      <div className={`grid grid-cols-1 ${compact ? 'gap-5' : 'lg:grid-cols-3 gap-8'}`}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div>
           <h5 className="text-lg font-semibold text-primary mb-2">Resultados que você pode esperar</h5>
           <ul className="space-y-2">
