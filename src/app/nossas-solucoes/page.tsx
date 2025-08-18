@@ -411,5 +411,6 @@ function DetailsBlock({
         </div>
       </div>
     </div>
-  );
+  
+);
 }
