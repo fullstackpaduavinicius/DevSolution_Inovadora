@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { FaCode, FaRobot, FaLaptopCode, FaTimes, FaWhatsapp, FaArrowRight } from 'react-icons/fa';
 
 type ServiceKey = 'dev' | 'automation' | 'custom';
@@ -37,7 +37,7 @@ const CARDS: {
   },
 ];
 
-// conteúdo detalhado dos modais (aplicando o que discutimos: benefício, diferenciais, GA4/SEO, entregáveis)
+// conteúdo detalhado dos modais
 const DETAILS: Record<
   ServiceKey,
   {
@@ -120,6 +120,17 @@ const DETAILS: Record<
 export default function ServicesSection() {
   const [openKey, setOpenKey] = useState<ServiceKey | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const y = useMotionValue(0);
+
+  // detectar mobile para habilitar swipe e usar layout de bottom sheet
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)'); // Tailwind sm breakpoint
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
 
   const waHref = useMemo(() => {
     const phone = '5579998807035';
@@ -132,24 +143,46 @@ export default function ServicesSection() {
     return `https://wa.me/${phone}?text=${text}&${utms}`;
   }, []);
 
-  // Fechar com ESC e travar scroll de fundo quando modal aberto
+  // Trava o scroll do fundo enquanto o modal/sheet estiver aberto
+  useEffect(() => {
+    if (openKey) {
+      const original = {
+        overflow: document.body.style.overflow,
+        touchAction: (document.body.style as any).touchAction,
+      };
+      document.body.style.overflow = 'hidden';
+      (document.body.style as any).touchAction = 'none'; // evita scroll em iOS/Android por trás
+      // foco inicial no conteúdo do modal/sheet
+      setTimeout(() => dialogRef.current?.focus(), 0);
+      return () => {
+        document.body.style.overflow = original.overflow;
+        (document.body.style as any).touchAction = original.touchAction;
+      };
+    }
+  }, [openKey]);
+
+  // Fecha com ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpenKey(null);
     };
     document.addEventListener('keydown', onKey);
-    if (openKey) {
-      document.body.style.overflow = 'hidden';
-      // foco inicial no modal
-      setTimeout(() => dialogRef.current?.focus(), 0);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  // handler de fim do arrasto (swipe-down para fechar no mobile)
+  const handleDragEnd = (_: any, info: { offset: { y: number }; velocity: { y: number } }) => {
+    const dragged = info.offset.y;
+    const velo = info.velocity.y;
+    // fecha se puxou o sheet para baixo o suficiente ou com velocidade alta
+    if (dragged > 120 || velo > 800) {
+      setOpenKey(null);
+      y.set(0);
     } else {
-      document.body.style.overflow = '';
+      // volta para posição original
+      y.set(0);
     }
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
-  }, [openKey]);
+  };
 
   return (
     <section className="py-16 bg-light">
@@ -211,7 +244,7 @@ export default function ServicesSection() {
         </div>
       </div>
 
-      {/* Modais */}
+      {/* Modal (desktop) / Bottom Sheet (mobile) */}
       <AnimatePresence>
         {openKey && (
           <motion.div
@@ -219,7 +252,6 @@ export default function ServicesSection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            aria-hidden={false}
             role="dialog"
             aria-modal="true"
             onClick={() => setOpenKey(null)}
@@ -227,99 +259,154 @@ export default function ServicesSection() {
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/60" />
 
-            {/* Dialog */}
+            {/* Container do diálogo/sheet */}
             <motion.div
               id={`dialog-${openKey}`}
               ref={dialogRef}
               tabIndex={-1}
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-              className="relative w-full sm:max-w-2xl mx-auto bg-white text-primary rounded-2xl shadow-xl p-6 sm:p-8 m-4"
+              // Mobile: bottom sheet; Desktop: modal central
+              className={[
+                // base
+                'relative mx-auto bg-white text-primary shadow-xl',
+                'focus:outline-none',
+                // mobile sheet
+                'w-full sm:w-auto',
+                'sm:rounded-2xl', // desktop arredondado total
+                'rounded-t-2xl', // mobile arredondado topo
+                // altura e scroll
+                // mobile: ocupa até ~85% da viewport com suporte a dvh; desktop: altura auto
+                'sm:max-w-2xl',
+                isMobile ? 'h-[85dvh]' : '',
+                // evitar scroll vazar do sheet
+                'overflow-hidden',
+              ].join(' ')}
+              style={{
+                // impede que o scroll interno do sheet "puxe" o fundo (iOS/Android)
+                overscrollBehavior: 'contain',
+              }}
+              // impedir fechamento ao clicar dentro
               onClick={(e) => e.stopPropagation()}
+              // animações diferentes mobile/desktop
+              initial={isMobile ? { y: 40, opacity: 1 } : { y: 20, opacity: 0 }}
+              animate={isMobile ? { y: 0, opacity: 1 } : { y: 0, opacity: 1 }}
+              exit={isMobile ? { y: 60, opacity: 1 } : { y: 10, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              // drag no mobile
+              drag={isMobile ? 'y' : false}
+              dragDirectionLock
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.6 }}
+              style={{ y }}
+              onDragEnd={isMobile ? handleDragEnd : undefined}
             >
+              {/* Header do sheet (mobile) com "handle" de toque fácil */}
+              <div className="sm:hidden sticky top-0 z-10 bg-white">
+                <button
+                  className="absolute top-3 right-3 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
+                  onClick={() => setOpenKey(null)}
+                  aria-label="Fechar modal"
+                >
+                  <FaTimes />
+                </button>
+                <div className="flex flex-col items-center pt-3 pb-2">
+                  <span
+                    className="h-1.5 w-12 rounded-full bg-gray-300"
+                    aria-hidden
+                  />
+                </div>
+              </div>
+
+              {/* Header (desktop) com botão X */}
               <button
-                className="absolute top-3 right-3 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
+                className="hidden sm:inline-flex absolute top-3 right-3 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
                 onClick={() => setOpenKey(null)}
                 aria-label="Fechar modal"
               >
                 <FaTimes />
               </button>
 
-              {(() => {
-                const d = DETAILS[openKey];
-                return (
-                  <>
-                    <h3 className="text-2xl font-bold mb-2">{d.headline}</h3>
-                    <p className="text-secondary mb-6">{d.sub}</p>
+              {/* Conteúdo rolável */}
+              <div
+                className={[
+                  'p-6 sm:p-8',
+                  // mobile: o conteúdo fica rolável dentro do sheet
+                  isMobile ? 'overflow-y-auto h-full pb-[max(env(safe-area-inset-bottom),16px)]' : '',
+                ].join(' ')}
+              >
+                {(() => {
+                  const d = DETAILS[openKey];
+                  return (
+                    <>
+                      <h3 className="text-2xl font-bold mb-2">{d.headline}</h3>
+                      <p className="text-secondary mb-6">{d.sub}</p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-semibold mb-2">Benefícios</h4>
-                        <ul className="space-y-2 text-sm">
-                          {d.benefits.map((b, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold mb-2">Benefícios</h4>
+                          <ul className="space-y-2 text-sm">
+                            {d.benefits.map((b, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                <span>{b}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold mb-2">Para quem é</h4>
+                          <ul className="space-y-2 text-sm">
+                            {d.forWho.map((b, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                <span>{b}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold mb-2">Entregáveis</h4>
+                          <ul className="space-y-2 text-sm">
+                            {d.deliverables.map((b, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                <span>{b}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold mb-2">Prazos típicos</h4>
+                          <ul className="space-y-2 text-sm">
+                            {d.timeline.map((b, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                <span>{b}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Para quem é</h4>
-                        <ul className="space-y-2 text-sm">
-                          {d.forWho.map((b, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Entregáveis</h4>
-                        <ul className="space-y-2 text-sm">
-                          {d.deliverables.map((b, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Prazos típicos</h4>
-                        <ul className="space-y-2 text-sm">
-                          {d.timeline.map((b, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
 
-                    <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                      <a
-                        href={waHref}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
-                        data-gtag="click_whatsapp"
-                      >
-                        <FaWhatsapp className="text-base" />
-                        Solicitar orçamento
-                      </a>
-                      <button
-                        onClick={() => setOpenKey(null)}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
-                      >
-                        Fechar
-                      </button>
-                    </div>
-                  </>
-                );
-              })()}
+                      <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                        <a
+                          href={waHref}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
+                          data-gtag="click_whatsapp"
+                        >
+                          <FaWhatsapp className="text-base" />
+                          Solicitar orçamento
+                        </a>
+                        <button
+                          onClick={() => setOpenKey(null)}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
+                        >
+                          Fechar
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
             </motion.div>
           </motion.div>
         )}
