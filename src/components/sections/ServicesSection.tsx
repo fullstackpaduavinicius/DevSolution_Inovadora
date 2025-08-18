@@ -37,7 +37,6 @@ const CARDS: {
   },
 ];
 
-// conteúdo detalhado dos modais
 const DETAILS: Record<
   ServiceKey,
   {
@@ -123,9 +122,9 @@ export default function ServicesSection() {
   const [isMobile, setIsMobile] = useState(false);
   const y = useMotionValue(0);
 
-  // detectar mobile para habilitar swipe e usar layout de bottom sheet
+  // detectar mobile
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 639px)'); // Tailwind sm breakpoint
+    const mq = window.matchMedia('(max-width: 639px)');
     const update = () => setIsMobile(mq.matches);
     update();
     mq.addEventListener?.('change', update);
@@ -143,28 +142,24 @@ export default function ServicesSection() {
     return `https://wa.me/${phone}?text=${text}&${utms}`;
   }, []);
 
-  // Trava o scroll do fundo enquanto o modal/sheet estiver aberto
+  // trava o fundo
   useEffect(() => {
-    if (openKey) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      setTimeout(() => dialogRef.current?.focus(), 0);
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
+    if (!openKey) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => dialogRef.current?.focus(), 0);
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [openKey]);
 
-  // Fecha com ESC
+  // ESC para fechar
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenKey(null);
-    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenKey(null);
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // handler de fim do arrasto (swipe-down para fechar no mobile)
   const handleDragEnd = (_: any, info: { offset: { y: number }; velocity: { y: number } }) => {
     const dragged = info.offset.y;
     const velo = info.velocity.y;
@@ -251,50 +246,48 @@ export default function ServicesSection() {
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/60" />
 
-            {/* Container do diálogo/sheet */}
+            {/* Sheet / Modal container */}
             <motion.div
               id={`dialog-${openKey}`}
               ref={dialogRef}
               tabIndex={-1}
               className={[
-                'relative mx-auto bg-white text-primary shadow-xl focus:outline-none',
-                'w-full sm:w-auto',
-                'sm:rounded-2xl',
+                'relative bg-white text-primary shadow-xl focus:outline-none',
+                'w-[94%] sm:w-auto',               // mais compacto no mobile
+                'sm:max-w-2xl sm:rounded-2xl',
                 'rounded-t-2xl',
-                'sm:max-w-2xl',
-                'overscroll-contain', // evita "puxar" o fundo
-                // layout em coluna para separar header, conteúdo rolável e footer
-                'flex flex-col',
-                // altura de sheet no mobile
-                isMobile ? 'h-[90dvh]' : '',
+                'flex flex-col overscroll-contain',
+                // limites de altura adaptáveis no mobile
+                'max-h-[80dvh] sm:max-h-none',
+                'mx-auto',
               ].join(' ')}
               onClick={(e) => e.stopPropagation()}
-              initial={isMobile ? { y: 40, opacity: 1 } : { y: 20, opacity: 0 }}
+              initial={isMobile ? { y: 36, opacity: 1 } : { y: 20, opacity: 0 }}
               animate={isMobile ? { y: 0, opacity: 1 } : { y: 0, opacity: 1 }}
-              exit={isMobile ? { y: 60, opacity: 1 } : { y: 10, opacity: 0 }}
+              exit={isMobile ? { y: 56, opacity: 1 } : { y: 10, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 260, damping: 22 }}
               drag={isMobile ? 'y' : false}
               dragDirectionLock
               dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={{ top: 0, bottom: 0.6 }}
+              dragElastic={{ top: 0, bottom: 0.55 }}
               style={{ y }}
               onDragEnd={isMobile ? handleDragEnd : undefined}
             >
-              {/* Header do sheet (mobile) com "handle" */}
+              {/* Header compacto mobile */}
               <div className="sm:hidden sticky top-0 z-10 bg-white">
                 <button
-                  className="absolute top-3 right-3 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
+                  className="absolute top-2 right-2 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
                   onClick={() => setOpenKey(null)}
                   aria-label="Fechar modal"
                 >
                   <FaTimes />
                 </button>
-                <div className="flex flex-col items-center pt-3 pb-2">
-                  <span className="h-1.5 w-12 rounded-full bg-gray-300" aria-hidden />
+                <div className="flex flex-col items-center pt-2 pb-2">
+                  <span className="h-1.5 w-10 rounded-full bg-gray-300" aria-hidden />
                 </div>
               </div>
 
-              {/* Header (desktop) com botão X */}
+              {/* Botão X desktop */}
               <button
                 className="hidden sm:inline-flex absolute top-3 right-3 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
                 onClick={() => setOpenKey(null)}
@@ -303,66 +296,64 @@ export default function ServicesSection() {
                 <FaTimes />
               </button>
 
-              {/* Conteúdo rolável */}
+              {/* Conteúdo COMPACTO e rolável */}
               <div
                 className={[
-                  'px-6 sm:px-8 pt-2 sm:pt-8',
-                  // ESSENCIAL: permite o scroll do conteúdo tomando o espaço restante
+                  // padding reduzido no mobile
+                  'px-4 py-3 sm:p-8',
                   'min-h-0 flex-1 overflow-y-auto',
-                  // espaço extra no fundo para não ficar por baixo do footer mobile
-                  'pb-24 sm:pb-8',
+                  // espaço para não “bater” no footer sticky do mobile
+                  'pb-20 sm:pb-8',
                 ].join(' ')}
-                style={{
-                  WebkitOverflowScrolling: 'touch',
-                } as React.CSSProperties}
+                style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
               >
                 {(() => {
                   const d = DETAILS[openKey];
                   return (
                     <>
-                      <h3 className="text-2xl font-bold mb-2">{d.headline}</h3>
-                      <p className="text-secondary mb-6">{d.sub}</p>
+                      <h3 className="text-lg sm:text-2xl font-bold mb-2">{d.headline}</h3>
+                      <p className="text-secondary text-sm sm:text-base mb-4 sm:mb-6">{d.sub}</p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div>
-                          <h4 className="font-semibold mb-2">Benefícios</h4>
-                          <ul className="space-y-2 text-sm">
+                          <h4 className="font-semibold text-base sm:text-lg mb-1.5">Benefícios</h4>
+                          <ul className="space-y-1.5 sm:space-y-2 text-sm">
                             {d.benefits.map((b, i) => (
                               <li key={i} className="flex items-start">
-                                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                <span className="mt-2 mr-2 w-1.5 h-1.5 bg-accent rounded-full"></span>
                                 <span>{b}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
                         <div>
-                          <h4 className="font-semibold mb-2">Para quem é</h4>
-                          <ul className="space-y-2 text-sm">
+                          <h4 className="font-semibold text-base sm:text-lg mb-1.5">Para quem é</h4>
+                          <ul className="space-y-1.5 sm:space-y-2 text-sm">
                             {d.forWho.map((b, i) => (
                               <li key={i} className="flex items-start">
-                                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                <span className="mt-2 mr-2 w-1.5 h-1.5 bg-accent rounded-full"></span>
                                 <span>{b}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
                         <div>
-                          <h4 className="font-semibold mb-2">Entregáveis</h4>
-                          <ul className="space-y-2 text-sm">
+                          <h4 className="font-semibold text-base sm:text-lg mb-1.5">Entregáveis</h4>
+                          <ul className="space-y-1.5 sm:space-y-2 text-sm">
                             {d.deliverables.map((b, i) => (
                               <li key={i} className="flex items-start">
-                                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                <span className="mt-2 mr-2 w-1.5 h-1.5 bg-accent rounded-full"></span>
                                 <span>{b}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
                         <div>
-                          <h4 className="font-semibold mb-2">Prazos típicos</h4>
-                          <ul className="space-y-2 text-sm">
+                          <h4 className="font-semibold text-base sm:text-lg mb-1.5">Prazos típicos</h4>
+                          <ul className="space-y-1.5 sm:space-y-2 text-sm">
                             {d.timeline.map((b, i) => (
                               <li key={i} className="flex items-start">
-                                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                <span className="mt-2 mr-2 w-1.5 h-1.5 bg-accent rounded-full"></span>
                                 <span>{b}</span>
                               </li>
                             ))}
@@ -374,25 +365,25 @@ export default function ServicesSection() {
                 })()}
               </div>
 
-              {/* Footer fixo no MOBILE (desktop mantém dentro do fluxo) */}
-              <div className="sm:hidden sticky bottom-0 z-10 bg-white/95 backdrop-blur border-t px-4 py-3 flex gap-3">
+              {/* Footer compacto mobile (sticky) */}
+              <div className="sm:hidden sticky bottom-0 z-10 bg-white/95 backdrop-blur border-t px-3 py-2 flex gap-2">
                 <a
                   href={waHref}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
                   data-gtag="click_whatsapp"
                 >
                   <FaWhatsapp className="text-base" />
-                  Solicitar orçamento
+                  WhatsApp
                 </a>
                 <button
                   onClick={() => setOpenKey(null)}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
                 >
                   Fechar
                 </button>
               </div>
 
-              {/* Footer em DESKTOP (fica como antes) */}
+              {/* Footer desktop */}
               <div className="hidden sm:flex px-8 pb-8 pt-4 gap-3">
                 <a
                   href={waHref}
