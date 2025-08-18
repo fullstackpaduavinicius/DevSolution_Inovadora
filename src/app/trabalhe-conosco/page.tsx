@@ -44,7 +44,6 @@ export default function TrabalheConoscoPage() {
     return `${sizeMB.toFixed(2)} MB`;
   }, [resumeFile]);
 
-  // ✅ estabiliza a função e elimina warning do useCallback
   const validateAndSetFile = useCallback(
     (file: File | null) => {
       if (!file) return;
@@ -90,7 +89,7 @@ export default function TrabalheConoscoPage() {
     dropRef.current?.classList.remove('ring-2', 'ring-accent');
   }, []);
 
-  // ✅ não usar o parâmetro "data" se não vai aproveitar — remove o erro @typescript-eslint/no-unused-vars
+  // Não usamos os dados para envio de verdade agora; só feedback visual
   const onSubmit = () => {
     setSent(true);
     setTimeout(() => setSent(false), 4000);
@@ -310,7 +309,6 @@ export default function TrabalheConoscoPage() {
               )}
 
               {fileError && <p className="text-red-600 text-sm">{fileError}</p>}
-              {/* ✅ sem any */}
               {errors.resume?.message && !fileError && (
                 <p className="text-red-600 text-sm">{(errors.resume as FieldError).message}</p>
               )}
@@ -327,7 +325,6 @@ export default function TrabalheConoscoPage() {
                 Concordo que meus dados sejam tratados para fins de recrutamento (LGPD).
               </label>
             </div>
-            {/* ✅ sem any */}
             {errors.consent?.message && (
               <p className="text-red-600 text-sm">{(errors.consent as FieldError).message}</p>
             )}

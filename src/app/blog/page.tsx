@@ -68,7 +68,6 @@ export default function BlogPage() {
   const [category, setCategory] = useState<Category>('Todos');
   const [tag, setTag] = useState<string>('Todos');
 
-  // Lista de categorias em array "mutável" para compatibilidade com props tipadas como string[]
   const categoryOptions = useMemo<string[]>(() => [...CATEGORIES], []);
 
   const tagsAll = useMemo(() => {
