@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldError } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { FaUpload, FaPaperPlane, FaCheckCircle } from 'react-icons/fa';
 import SectionTitle from '@/components/ui/SectionTitle';
@@ -44,27 +44,28 @@ export default function TrabalheConoscoPage() {
     return `${sizeMB.toFixed(2)} MB`;
   }, [resumeFile]);
 
-  const validateAndSetFile = (file: File | null) => {
-    if (!file) return;
-    // valida tipo
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      setFileError('Envie um arquivo PDF (.pdf).');
-      return;
-    }
-    // valida tamanho
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      setFileError(`Tamanho máximo: ${MAX_SIZE_MB}MB.`);
-      return;
-    }
-    setFileError(null);
-    // Atualiza o input controlado pelo RHF
-    const list = {
-      0: file,
-      length: 1,
-      item: (idx: number) => (idx === 0 ? file : null),
-    } as unknown as FileList;
-    setValue('resume', list, { shouldValidate: true });
-  };
+  // ✅ estabiliza a função e elimina warning do useCallback
+  const validateAndSetFile = useCallback(
+    (file: File | null) => {
+      if (!file) return;
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        setFileError('Envie um arquivo PDF (.pdf).');
+        return;
+      }
+      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+        setFileError(`Tamanho máximo: ${MAX_SIZE_MB}MB.`);
+        return;
+      }
+      setFileError(null);
+      const list = {
+        0: file,
+        length: 1,
+        item: (idx: number) => (idx === 0 ? file : null),
+      } as unknown as FileList;
+      setValue('resume', list, { shouldValidate: true });
+    },
+    [setValue]
+  );
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -74,7 +75,7 @@ export default function TrabalheConoscoPage() {
       validateAndSetFile(file);
       dropRef.current?.classList.remove('ring-2', 'ring-accent');
     },
-    []
+    [validateAndSetFile]
   );
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -89,8 +90,8 @@ export default function TrabalheConoscoPage() {
     dropRef.current?.classList.remove('ring-2', 'ring-accent');
   }, []);
 
-  const onSubmit = (data: FormData) => {
-    // apenas visual por enquanto
+  // ✅ não usar o parâmetro "data" se não vai aproveitar — remove o erro @typescript-eslint/no-unused-vars
+  const onSubmit = () => {
     setSent(true);
     setTimeout(() => setSent(false), 4000);
     reset();
@@ -106,7 +107,6 @@ export default function TrabalheConoscoPage() {
           center
         />
 
-        {/* HERO / INTRO + IMAGEM (responsivo) */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-10">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-primary mb-3">
@@ -124,9 +124,7 @@ export default function TrabalheConoscoPage() {
             </ul>
           </div>
 
-          {/* Área de imagem */}
           <div className="relative w-full h-56 sm:h-72 lg:h-80 rounded-2xl overflow-hidden bg-gray-100">
-            {/* troque a imagem por algo do seu brand */}
             <Image
               src="/images/careers-hero.jpg"
               alt="Equipe colaborando em projeto digital"
@@ -137,7 +135,6 @@ export default function TrabalheConoscoPage() {
           </div>
         </section>
 
-        {/* FORMULÁRIO */}
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -149,7 +146,6 @@ export default function TrabalheConoscoPage() {
             Preencha seus dados e anexe seu currículo em PDF. Retornamos em até <strong>5 dias úteis</strong>.
           </p>
 
-          {/* alerta sucesso visual */}
           {sent && (
             <div
               className="mb-4 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-800"
@@ -165,7 +161,6 @@ export default function TrabalheConoscoPage() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-            {/* Nome / Email */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label htmlFor="name" className="block text-secondary">Nome completo*</label>
@@ -177,7 +172,7 @@ export default function TrabalheConoscoPage() {
                   aria-invalid={!!errors.name}
                   placeholder="Seu nome"
                 />
-                {errors.name && <p className="text-red-600 text-sm">{errors.name.message}</p>}
+                {errors.name?.message && <p className="text-red-600 text-sm">{errors.name.message}</p>}
               </div>
 
               <div className="space-y-1">
@@ -193,11 +188,10 @@ export default function TrabalheConoscoPage() {
                   aria-invalid={!!errors.email}
                   placeholder="voce@exemplo.com"
                 />
-                {errors.email && <p className="text-red-600 text-sm">{errors.email.message}</p>}
+                {errors.email?.message && <p className="text-red-600 text-sm">{errors.email.message}</p>}
               </div>
             </div>
 
-            {/* Telefone / Vaga / Experiência */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <label htmlFor="phone" className="block text-secondary">Telefone (opcional)</label>
@@ -210,7 +204,7 @@ export default function TrabalheConoscoPage() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
                   placeholder="+55 79 9XXXX-XXXX"
                 />
-                {errors.phone && <p className="text-red-600 text-sm">{errors.phone.message}</p>}
+                {errors.phone?.message && <p className="text-red-600 text-sm">{errors.phone.message as string}</p>}
               </div>
 
               <div className="space-y-1">
@@ -244,7 +238,6 @@ export default function TrabalheConoscoPage() {
               </div>
             </div>
 
-            {/* LinkedIn / Portfólio */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label htmlFor="linkedin" className="block text-secondary">LinkedIn (opcional)</label>
@@ -268,7 +261,6 @@ export default function TrabalheConoscoPage() {
               </div>
             </div>
 
-            {/* Mensagem */}
             <div className="space-y-1">
               <label htmlFor="message" className="block text-secondary">Mensagem (opcional)</label>
               <textarea
@@ -280,7 +272,6 @@ export default function TrabalheConoscoPage() {
               />
             </div>
 
-            {/* Upload PDF com drag & drop */}
             <div className="space-y-2">
               <span className="block text-secondary">Currículo (PDF, até {MAX_SIZE_MB}MB)*</span>
 
@@ -311,19 +302,20 @@ export default function TrabalheConoscoPage() {
                 />
               </label>
 
-              {/* Preview do arquivo escolhido */}
               {resumeFile && !fileError && (
                 <div className="rounded-lg bg-light p-3 text-sm text-primary">
-                  <span className="font-medium">Selecionado:</span> {resumeFile.name} <span className="text-secondary">({humanFileSize})</span>
+                  <span className="font-medium">Selecionado:</span> {resumeFile.name}{' '}
+                  <span className="text-secondary">({humanFileSize})</span>
                 </div>
               )}
 
-              {/* erros */}
               {fileError && <p className="text-red-600 text-sm">{fileError}</p>}
-              {errors.resume && !fileError && <p className="text-red-600 text-sm">{(errors.resume as any).message}</p>}
+              {/* ✅ sem any */}
+              {errors.resume?.message && !fileError && (
+                <p className="text-red-600 text-sm">{(errors.resume as FieldError).message}</p>
+              )}
             </div>
 
-            {/* LGPD consent */}
             <div className="flex items-start gap-2">
               <input
                 id="consent"
@@ -335,9 +327,11 @@ export default function TrabalheConoscoPage() {
                 Concordo que meus dados sejam tratados para fins de recrutamento (LGPD).
               </label>
             </div>
-            {errors.consent && <p className="text-red-600 text-sm">{(errors.consent as any).message}</p>}
+            {/* ✅ sem any */}
+            {errors.consent?.message && (
+              <p className="text-red-600 text-sm">{(errors.consent as FieldError).message}</p>
+            )}
 
-            {/* Submit (visual) */}
             <button
               type="submit"
               className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"

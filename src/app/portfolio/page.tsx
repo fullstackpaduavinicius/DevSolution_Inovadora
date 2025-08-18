@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -9,7 +10,7 @@ import {
 
 type Offer = {
   id: string;
-  icon: JSX.Element;
+  icon: ReactNode;
   title: string;
   subtitle: string;
   outcomes: string[];

@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCode, FaRobot, FaLaptopCode, FaTimes, FaWhatsapp, FaArrowRight } from 'react-icons/fa';
@@ -8,7 +9,7 @@ type ServiceKey = 'dev' | 'automation' | 'custom';
 
 const CARDS: {
   key: ServiceKey;
-  icon: JSX.Element;
+  icon: ReactNode;
   title: string;
   description: string;
   features: string[];

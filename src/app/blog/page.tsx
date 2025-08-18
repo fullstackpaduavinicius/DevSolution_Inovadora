@@ -8,7 +8,7 @@ type Post = {
   slug: string;
   title: string;
   excerpt: string;
-  date: string;
+  date: string;      // ISO
   readTime: string;
   category: 'GA4 & SEO' | 'E-commerce' | 'Automações' | 'MVP & Startup';
   tags: string[];
@@ -61,11 +61,15 @@ const POSTS: Post[] = [
 ];
 
 const CATEGORIES = ['Todos', 'GA4 & SEO', 'E-commerce', 'Automações', 'MVP & Startup'] as const;
+type Category = (typeof CATEGORIES)[number];
 
 export default function BlogPage() {
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<typeof CATEGORIES[number]>('Todos');
+  const [category, setCategory] = useState<Category>('Todos');
   const [tag, setTag] = useState<string>('Todos');
+
+  // Lista de categorias em array "mutável" para compatibilidade com props tipadas como string[]
+  const categoryOptions = useMemo<string[]>(() => [...CATEGORIES], []);
 
   const tagsAll = useMemo(() => {
     const t = new Set<string>();
@@ -91,9 +95,8 @@ export default function BlogPage() {
     });
   }, [featured, rest, category, tag, query]);
 
-  {/* pt-20 compensa o header fixo h-14 (56px) + respiro */}
   return (
-    
+    // pt-20 compensa o header fixo h-14 (56px) + respiro
     <main className="pt-20 pb-12">
       <div className="max-w-6xl mx-auto px-4">
         {/* Hero/resumo do blog */}
@@ -118,14 +121,18 @@ export default function BlogPage() {
               />
             </div>
             <div className="hidden md:flex gap-3">
-              <CategorySelect value={category} onChange={setCategory} />
+              <CategorySelect value={category} onChange={(v) => setCategory(v)} />
               <TagSelect value={tag} onChange={setTag} options={tagsAll} />
             </div>
           </div>
 
           {/* Filtros em pílulas (mobile) */}
           <div className="md:hidden flex gap-2 overflow-x-auto no-scrollbar">
-            <Pills items={CATEGORIES as unknown as string[]} value={category} onChange={setCategory as any} />
+            <Pills
+              items={categoryOptions}
+              value={category}
+              onChange={(v) => setCategory(v as Category)}
+            />
             <Pills items={tagsAll} value={tag} onChange={setTag} />
           </div>
         </section>
@@ -273,8 +280,8 @@ function CategorySelect({
   value,
   onChange,
 }: {
-  value: typeof CATEGORIES[number];
-  onChange: (v: typeof CATEGORIES[number]) => void;
+  value: Category;
+  onChange: (v: Category) => void;
 }) {
   return (
     <div>
@@ -284,7 +291,7 @@ function CategorySelect({
       <select
         id="cat"
         value={value}
-        onChange={(e) => onChange(e.target.value as any)}
+        onChange={(e) => onChange(e.target.value as Category)}
         className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
       >
         {CATEGORIES.map((c) => (
