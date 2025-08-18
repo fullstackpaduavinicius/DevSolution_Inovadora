@@ -30,7 +30,7 @@ export default function HeroSection() {
           aria-hidden
           poster="/banner_fallback.jpg"
         >
-          <source src="/banner_video.mp4" type="video/mp4" />
+          <source src="/banner1_video.mp4" type="video/mp4" />
           <Image
             src="/banner_fallback.jpg"
             alt=""
