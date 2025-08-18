@@ -37,6 +37,7 @@ const CARDS: {
   },
 ];
 
+// conteúdo detalhado dos modais
 const DETAILS: Record<
   ServiceKey,
   {
@@ -253,18 +254,17 @@ export default function ServicesSection() {
               tabIndex={-1}
               className={[
                 'relative bg-white text-primary shadow-xl focus:outline-none',
-                'w-[94%] sm:w-auto',               // mais compacto no mobile
-                'sm:max-w-2xl sm:rounded-2xl',
-                'rounded-t-2xl',
-                'flex flex-col overscroll-contain',
-                // limites de altura adaptáveis no mobile
-                'max-h-[80dvh] sm:max-h-none',
+                // compacto e adaptável no mobile
+                'w-[95%] sm:w-auto',
+                'max-h-[70dvh] sm:max-h-none',
+                'rounded-t-xl sm:rounded-2xl',
                 'mx-auto',
+                'flex flex-col overscroll-contain',
               ].join(' ')}
               onClick={(e) => e.stopPropagation()}
-              initial={isMobile ? { y: 36, opacity: 1 } : { y: 20, opacity: 0 }}
+              initial={isMobile ? { y: 28, opacity: 1 } : { y: 20, opacity: 0 }}
               animate={isMobile ? { y: 0, opacity: 1 } : { y: 0, opacity: 1 }}
-              exit={isMobile ? { y: 56, opacity: 1 } : { y: 10, opacity: 0 }}
+              exit={isMobile ? { y: 50, opacity: 1 } : { y: 10, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 260, damping: 22 }}
               drag={isMobile ? 'y' : false}
               dragDirectionLock
@@ -273,7 +273,7 @@ export default function ServicesSection() {
               style={{ y }}
               onDragEnd={isMobile ? handleDragEnd : undefined}
             >
-              {/* Header compacto mobile */}
+              {/* Header mobile com handle e X */}
               <div className="sm:hidden sticky top-0 z-10 bg-white">
                 <button
                   className="absolute top-2 right-2 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
@@ -296,13 +296,14 @@ export default function ServicesSection() {
                 <FaTimes />
               </button>
 
-              {/* Conteúdo COMPACTO e rolável */}
+              {/* Conteúdo: mobile = accordions compactos; desktop = grid completo */}
               <div
                 className={[
                   // padding reduzido no mobile
                   'px-4 py-3 sm:p-8',
+                  // ESSENCIAL: ocupa espaço restante e permite scroll
                   'min-h-0 flex-1 overflow-y-auto',
-                  // espaço para não “bater” no footer sticky do mobile
+                  // espaço para não colidir com o footer sticky do mobile
                   'pb-20 sm:pb-8',
                 ].join(' ')}
                 style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
@@ -314,76 +315,107 @@ export default function ServicesSection() {
                       <h3 className="text-lg sm:text-2xl font-bold mb-2">{d.headline}</h3>
                       <p className="text-secondary text-sm sm:text-base mb-4 sm:mb-6">{d.sub}</p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                        <div>
-                          <h4 className="font-semibold text-base sm:text-lg mb-1.5">Benefícios</h4>
-                          <ul className="space-y-1.5 sm:space-y-2 text-sm">
-                            {d.benefits.map((b, i) => (
-                              <li key={i} className="flex items-start">
-                                <span className="mt-2 mr-2 w-1.5 h-1.5 bg-accent rounded-full"></span>
-                                <span>{b}</span>
-                              </li>
-                            ))}
-                          </ul>
+                      {isMobile ? (
+                        <div className="space-y-2">
+                          <details className="rounded-lg border p-2">
+                            <summary className="font-semibold text-sm cursor-pointer select-none">Benefícios</summary>
+                            <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+                              {d.benefits.map((b, i) => (
+                                <li key={i}>{b}</li>
+                              ))}
+                            </ul>
+                          </details>
+                          <details className="rounded-lg border p-2">
+                            <summary className="font-semibold text-sm cursor-pointer select-none">Para quem é</summary>
+                            <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+                              {d.forWho.map((b, i) => (
+                                <li key={i}>{b}</li>
+                              ))}
+                            </ul>
+                          </details>
+                          <details className="rounded-lg border p-2">
+                            <summary className="font-semibold text-sm cursor-pointer select-none">Entregáveis</summary>
+                            <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+                              {d.deliverables.map((b, i) => (
+                                <li key={i}>{b}</li>
+                              ))}
+                            </ul>
+                          </details>
+                          <details className="rounded-lg border p-2">
+                            <summary className="font-semibold text-sm cursor-pointer select-none">Prazos típicos</summary>
+                            <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+                              {d.timeline.map((b, i) => (
+                                <li key={i}>{b}</li>
+                              ))}
+                            </ul>
+                          </details>
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-base sm:text-lg mb-1.5">Para quem é</h4>
-                          <ul className="space-y-1.5 sm:space-y-2 text-sm">
-                            {d.forWho.map((b, i) => (
-                              <li key={i} className="flex items-start">
-                                <span className="mt-2 mr-2 w-1.5 h-1.5 bg-accent rounded-full"></span>
-                                <span>{b}</span>
-                              </li>
-                            ))}
-                          </ul>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div>
+                            <h4 className="font-semibold mb-2">Benefícios</h4>
+                            <ul className="space-y-2 text-sm">
+                              {d.benefits.map((b, i) => (
+                                <li key={i} className="flex items-start">
+                                  <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                  <span>{b}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold mb-2">Para quem é</h4>
+                            <ul className="space-y-2 text-sm">
+                              {d.forWho.map((b, i) => (
+                                <li key={i} className="flex items-start">
+                                  <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                  <span>{b}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold mb-2">Entregáveis</h4>
+                            <ul className="space-y-2 text-sm">
+                              {d.deliverables.map((b, i) => (
+                                <li key={i} className="flex items-start">
+                                  <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                  <span>{b}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold mb-2">Prazos típicos</h4>
+                            <ul className="space-y-2 text-sm">
+                              {d.timeline.map((b, i) => (
+                                <li key={i} className="flex items-start">
+                                  <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                  <span>{b}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-base sm:text-lg mb-1.5">Entregáveis</h4>
-                          <ul className="space-y-1.5 sm:space-y-2 text-sm">
-                            {d.deliverables.map((b, i) => (
-                              <li key={i} className="flex items-start">
-                                <span className="mt-2 mr-2 w-1.5 h-1.5 bg-accent rounded-full"></span>
-                                <span>{b}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-base sm:text-lg mb-1.5">Prazos típicos</h4>
-                          <ul className="space-y-1.5 sm:space-y-2 text-sm">
-                            {d.timeline.map((b, i) => (
-                              <li key={i} className="flex items-start">
-                                <span className="mt-2 mr-2 w-1.5 h-1.5 bg-accent rounded-full"></span>
-                                <span>{b}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
+                      )}
                     </>
                   );
                 })()}
               </div>
 
-              {/* Footer compacto mobile (sticky) */}
-              <div className="sm:hidden sticky bottom-0 z-10 bg-white/95 backdrop-blur border-t px-3 py-2 flex gap-2">
+              {/* Footer mobile: APENAS CTA principal (WhatsApp) */}
+              <div className="sm:hidden sticky bottom-0 z-10 bg-white/95 backdrop-blur border-t px-3 py-2">
                 <a
                   href={waHref}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
                   data-gtag="click_whatsapp"
                 >
                   <FaWhatsapp className="text-base" />
                   WhatsApp
                 </a>
-                <button
-                  onClick={() => setOpenKey(null)}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
-                >
-                  Fechar
-                </button>
               </div>
 
-              {/* Footer desktop */}
+              {/* Footer desktop (como antes) */}
               <div className="hidden sm:flex px-8 pb-8 pt-4 gap-3">
                 <a
                   href={waHref}
