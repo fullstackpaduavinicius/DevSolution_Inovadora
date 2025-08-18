@@ -9,7 +9,7 @@ import { FaLaptopCode, FaWhatsapp, FaBars, FaTimes, FaUserTie } from 'react-icon
 const NAV = [
   { label: 'Sobre', href: '/about' },
   { label: 'Serviços', href: '/services' },
-  { label: 'Portfólio', href: '/portfolio' },
+  { label: 'Nossas Soluções', href: '/nossas-solucoes' },
   { label: 'Blog', href: '/blog' },
   { label: 'Contato', href: '/contact' },
   { label: 'Trabalhe Conosco', href: '/trabalhe-conosco' }, // Corrigido para usar hífen

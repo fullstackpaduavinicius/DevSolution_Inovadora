@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/shared/Header';
 import Footer from '@/components/shared/Footer';
-import FloatingButtons from '@/components/shared/FloatingButtons'; // Importe o novo componente
+ // Importe o novo componente
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,7 +25,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
-        <FloatingButtons /> {/* 👈 Adicione esta linha */}
+        
       </body>
     </html>
   );

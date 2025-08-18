@@ -1,385 +1,352 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
-  FaStore, FaShoppingCart, FaRocket, FaLightbulb,
-  FaWhatsapp, FaTimes
+  FaSearch, FaTachometerAlt, FaChartLine, FaRobot,
+  FaShoppingCart, FaRocket, FaWhatsapp, FaCheckCircle
 } from 'react-icons/fa';
 
-type Offer = {
-  id: string;
+type Topic = {
+  id: 'seo' | 'perf' | 'ga4' | 'auto' | 'ecom' | 'mvp';
   icon: ReactNode;
-  title: string;
-  subtitle: string;
-  outcomes: string[];
-  solutions: string[];
-  kpis: string[];
-  stack: string[];
+  name: string;
+  headline: string;
+  intro: string;
+  why: string[];
+  steps: string[];
+  metrics: string[];
+  myth: string;
+  fact: string;
+  checklist: string[];
 };
 
-const OFFERS: Offer[] = [
+const TOPICS: Topic[] = [
   {
-    id: 'locals',
-    icon: <FaStore className="text-accent" size={28} />,
-    title: 'Negócios Locais',
-    subtitle: 'Restaurantes, clínicas, oficinas, academias…',
-    outcomes: ['Gere leads e pedidos direto no WhatsApp', 'Apareça no Google com SEO técnico', 'Página rápida que aumenta conversão'],
-    solutions: ['Site institucional/landing com CTA', 'Cardápio digital e pedidos online', 'Eventos GA4 (cliques, funil, scroll)'],
-    kpis: ['+40% em pedidos com cardápio + tráfego', 'Tempo de carregamento < 2s', 'Eventos GA4 100% configurados'],
-    stack: ['React/Next', 'Tailwind', 'Node', 'GA4', 'Vercel'],
+    id: 'seo',
+    icon: <FaSearch className="text-accent" />,
+    name: 'SEO',
+    headline: 'Seja encontrado por quem já está procurando você',
+    intro:
+      'SEO técnico + conteúdo certo colocam sua página na frente quando o cliente está com a intenção de compra alta.',
+    why: [
+      'Tráfego orgânico previsível a médio prazo',
+      'Custo por lead menor que mídia paga',
+      'Autoridade de marca no longo prazo',
+    ],
+    steps: [
+      'Corrigir títulos, meta tags e headings',
+      'Dados estruturados e sitemap/robots',
+      'Conteúdo que responde dúvidas (intenção!)',
+    ],
+    metrics: ['Impressões', 'CTR orgânico', 'Posição média', 'Leads orgânicos'],
+    myth: '“SEO é só mexer em palavras-chave.”',
+    fact: 'SEO é experiência + técnica + conteúdo. Velocidade e UX contam (muito).',
+    checklist: ['Title/Description únicos', 'URLs limpas', 'Schema.org', 'Links internos', 'Core Web Vitals OK'],
   },
   {
-    id: 'stock',
-    icon: <FaShoppingCart className="text-accent" size={28} />,
-    title: 'Lojas/Empresas com Estoque',
-    subtitle: 'Autopeças, eletrônicos, móveis, distribuidoras…',
-    outcomes: ['Venda online com autonomia', 'Controle de catálogo e pedidos', 'Integração com transporte e pagamento'],
-    solutions: ['E-commerce completo (Pix/Cartão)', 'Dashboard de vendas e clientes', 'Integrações (frete/ERP/WhatsApp API)'],
-    kpis: ['↑ taxa de conversão com UX + performance', 'Funil GA4: visita → produto → checkout', 'Redução de custo por venda (orgânico + pago)'],
-    stack: ['React/Next', 'Node API', 'MongoDB', 'GA4', 'Render/Vercel'],
+    id: 'perf',
+    icon: <FaTachometerAlt className="text-accent" />,
+    name: 'Performance',
+    headline: 'Velocidade é conversão',
+    intro:
+      'Páginas rápidas reduzem rejeição, aumentam o tempo de sessão e melhoram posições no Google.',
+    why: ['Mais conversões', 'Melhor SEO', 'Experiência mobile superior'],
+    steps: [
+      'Imagens otimizadas/modernas (WebP/AVIF)',
+      'Code-split e lazy loading',
+      'Requisições e scripts mínimos',
+    ],
+    metrics: ['Lighthouse', 'LCP', 'CLS', 'Tempo até interação'],
+    myth: '“Rodou 100 no Lighthouse, acabou.”',
+    fact: 'O objetivo é consistência real no tráfego; monitore com usuários de verdade.',
+    checklist: ['Imagens responsivas', 'Fontes locais', 'Cache/CDN', 'Minificação', 'Monitoramento contínuo'],
   },
   {
-    id: 'creators',
-    icon: <FaLightbulb className="text-accent" size={28} />,
-    title: 'Empreendedores Digitais',
-    subtitle: 'Infoprodutos, consultorias, SaaS solo…',
-    outcomes: ['Páginas que convertem com provas sociais', 'Captação e remarketing estruturados', 'Escalável para tráfego pago'],
-    solutions: ['Landing de alta conversão (A/B pronto)', 'Área de membros/assinatura', 'Eventos GA4 (leads, checkout, upsell)'],
-    kpis: ['↑ CTR e ↓ CPL em campanhas', 'Rastreio de funil por criativo', 'Tempo de publicação rápido'],
-    stack: ['React/Next', 'Tailwind', 'Gateways recorrentes', 'GA4'],
+    id: 'ga4',
+    icon: <FaChartLine className="text-accent" />,
+    name: 'GA4',
+    headline: 'Medição confiável para decisões melhores',
+    intro:
+      'Sem eventos bem definidos, você otimiza no escuro. GA4 conecta comportamento a resultados.',
+    why: ['Funil claro', 'Atribuição por campanha', 'ROI visível'],
+    steps: [
+      'Mapa de eventos (cliques, scroll, envio de lead)',
+      'Parâmetros/UTMs consistentes',
+      'Relatórios recorrentes',
+    ],
+    metrics: ['Eventos', 'Conversões', 'CAC', 'LTV', 'ROAS'],
+    myth: '“É só instalar e pronto.”',
+    fact: 'O valor vem do plano de medição + qualidade dos eventos.',
+    checklist: ['UTMs padronizadas', 'Eventos chave', 'Auditorias mensais', 'Relatórios auto-enviados'],
   },
   {
-    id: 'startups',
-    icon: <FaRocket className="text-accent" size={28} />,
-    title: 'Startups e MVP',
-    subtitle: 'Validação de produto e captação',
-    outcomes: ['MVP navegável rápido', 'Arquitetura escalável (multi-tenant opcional)', 'Medição de uso para roadmap'],
-    solutions: ['SPA/SSR + API (REST/GraphQL)', 'Auth JWT/OAuth + RBAC', 'Observabilidade básica + GA4'],
-    kpis: ['Time-to-market em semanas', 'Eventos de ativação/retenção configurados', 'Base pronta para pivôs'],
-    stack: ['React/Next', 'Node', 'MongoDB', 'GA4', 'CI/CD'],
+    id: 'auto',
+    icon: <FaRobot className="text-accent" />,
+    name: 'Automações',
+    headline: 'Tempo do time focado no que realmente importa',
+    intro:
+      'Bots e integrações tiram tarefas repetitivas do caminho e reduzem erros manuais.',
+    why: ['Menos custo operacional', 'Menos erro humano', 'Escala com time enxuto'],
+    steps: [
+      'Mapear processos (BPMN light)',
+      'Workers/Webhooks com logs',
+      'Alertas e relatórios automáticos',
+    ],
+    metrics: ['Horas poupadas', 'SLA de tarefas', 'Erros/incidentes'],
+    myth: '“Automação é só para empresas grandes.”',
+    fact: 'Começa pequeno (POC) e evolui. Ganhos aparecem rápido.',
+    checklist: ['Processo mapeado', 'Fallback documentado', 'Alertas configurados', 'Logs auditáveis'],
+  },
+  {
+    id: 'ecom',
+    icon: <FaShoppingCart className="text-accent" />,
+    name: 'E-commerce',
+    headline: 'Loja rápida, funil claro e pagamento sem atrito',
+    intro:
+      'UX + performance + métricas de funil levantam a taxa de conversão e reduzem custo por venda.',
+    why: ['Mais receita', 'Menos abandono', 'Dados para crescer'],
+    steps: ['Checkout simples', 'Pix/Cartão integrados', 'Teste A/B de páginas chave'],
+    metrics: ['Conversão', 'Ticket médio', 'Abandono de carrinho', 'ROAS'],
+    myth: '“É só subir produto.”',
+    fact: 'É sobre funil, confiança e velocidade.',
+    checklist: ['Fotos boas', 'Prova social', 'Frete claro', 'GA4 por etapa do funil'],
+  },
+  {
+    id: 'mvp',
+    icon: <FaRocket className="text-accent" />,
+    name: 'MVP',
+    headline: 'Valide rápido, aprenda e escale com segurança',
+    intro:
+      'MVP enxuto com eventos de ativação/retenção para orientar o roadmap antes de investir pesado.',
+    why: ['Tempo-to-market curto', 'Aprendizado rápido', 'Menos risco'],
+    steps: ['Priorizar hipóteses', 'Protótipo navegável', 'Telemetria desde o dia 1'],
+    metrics: ['Ativação', 'Retenção', 'Engajamento', 'NPS'],
+    myth: '“MVP precisa estar perfeito.”',
+    fact: 'Precisa ser útil e mensurável. O resto evolui.',
+    checklist: ['Autenticação segura', 'RBAC básico', 'Observabilidade', 'Deploy automatizado'],
   },
 ];
 
-// Hook simples para saber se está em mobile (<= 767px)
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
-  return isMobile;
-}
+export default function EducationSection() {
+  const [active, setActive] = useState<Topic['id']>('seo');
 
-export default function WhatWeDoSection() {
-  const isMobile = useIsMobile();
-  const [selected, setSelected] = useState<string>(OFFERS[0].id);      // painel desktop
-  const [mobileOpen, setMobileOpen] = useState<string | null>(null);   // modal mobile
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-  const y = useMotionValue(0);
+  // Mini calculadora — simples e didática
+  const [visits, setVisits] = useState(5000);
+  const [conv, setConv] = useState(1.5); // %
+  const [lift, setLift] = useState(20);  // %
+  const prefersReducedMotion = useReducedMotion();
+
+  const topic = useMemo(() => TOPICS.find((t) => t.id === active)!, [active]);
+
+  const baselineLeads = useMemo(() => Math.round((visits * (conv / 100))), [visits, conv]);
+  const improvedLeads = useMemo(
+    () => Math.round((visits * ((conv * (1 + lift / 100)) / 100))),
+    [visits, conv, lift]
+  );
+  const delta = improvedLeads - baselineLeads;
 
   const waHref = useMemo(() => {
     const phone = '5579998807035';
-    const text = encodeURIComponent('Olá! Vim pelo site da DevSolution Inovadora e quero solicitar um orçamento.');
-    const utms = new URLSearchParams({ utm_source: 'site', utm_medium: 'whatwedo_cta', utm_campaign: 'lead_devsolution' }).toString();
+    const text = encodeURIComponent('Olá! Quero ajuda para aplicar as boas práticas do guia.');
+    const utms = new URLSearchParams({ utm_source: 'site', utm_medium: 'education_section', utm_campaign: 'lead_devsolution' }).toString();
     return `https://wa.me/${phone}?text=${text}&${utms}`;
   }, []);
 
-  // Fechar modal com ESC e travar o fundo enquanto aberto
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(null); };
-    document.addEventListener('keydown', onKey);
-    if (mobileOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      setTimeout(() => dialogRef.current?.focus(), 0);
-      return () => {
-        document.body.style.overflow = prev;
-        document.removeEventListener('keydown', onKey);
-      };
-    }
-    return () => document.removeEventListener('keydown', onKey);
-  }, [mobileOpen]);
-
-  const active = OFFERS.find(o => o.id === selected)!;
-  const mobileActive = mobileOpen ? OFFERS.find(o => o.id === mobileOpen)! : null;
-
-  const handleCardClick = (id: string) => {
-    if (isMobile) {
-      if (mobileOpen) return;
-      setMobileOpen(id);
-    } else {
-      setSelected(id);
-    }
-  };
-
-  const handleDragEnd = (_: any, info: { offset: { y: number }; velocity: { y: number } }) => {
-    const dragged = info.offset.y;
-    const velo = info.velocity.y;
-    if (dragged > 120 || velo > 800) {
-      setMobileOpen(null);
-      y.set(0);
-    } else {
-      y.set(0);
-    }
-  };
-
   return (
-    <section className="py-16 bg-white">
+    <section className="bg-white py-14">
       <div className="max-w-6xl mx-auto px-4">
-        {/* Título */}
-        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-primary mb-3">O que podemos fazer pela sua empresa</h2>
-          <p className="text-secondary max-w-2xl mx-auto">
-            Soluções sob medida para seu momento — sempre com performance, SEO e mensuração (GA4).
+        {/* Header */}
+        <div className="text-center mb-8">
+          <motion.h2
+            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
+            whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-3xl font-bold text-primary"
+          >
+            Aprenda rápido. Aplique hoje.
+          </motion.h2>
+          <p className="text-secondary mt-2 max-w-2xl mx-auto">
+            Conteúdo prático em pílulas — SEO, performance, GA4, automações e mais. Sem enrolação.
           </p>
-        </motion.div>
-
-        {/* Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {OFFERS.map((o) => {
-            const isSel = o.id === selected;
-            return (
-              <motion.button
-                key={o.id}
-                onClick={() => handleCardClick(o.id)}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className={[
-                  'text-left rounded-xl p-4 shadow-md transition w-full',
-                  isSel && !isMobile ? 'bg-light ring-2 ring-accent' : 'bg-white hover:shadow-lg'
-                ].join(' ')}
-                aria-pressed={!isMobile && isSel}
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  {o.icon}
-                  <h3 className="text-lg font-semibold text-primary">{o.title}</h3>
-                </div>
-                <p className="text-secondary text-sm">{o.subtitle}</p>
-              </motion.button>
-            );
-          })}
         </div>
 
-        {/* Painel detalhado (DESKTOP apenas) */}
-        <motion.div
-          key={active.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-light rounded-2xl p-6 shadow-md hidden md:block"
-        >
-          <DetailsBlock offer={active} waHref={waHref} />
-        </motion.div>
-      </div>
-
-      {/* Modal MOBILE (bottom sheet compacto + swipe-down + accordion + footer CTA) */}
-      <AnimatePresence>
-        {mobileActive && (
-          <motion.div
-            className="fixed inset-0 z-[60] flex items-end justify-center md:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            role="dialog"
-            aria-modal="true"
-            onClick={() => setMobileOpen(null)}
+        {/* Nav de tópicos (scrollable no mobile, sem fundo preenchido no ativo) */}
+        <div className="mb-6">
+          <div
+            className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory touch-pan-x"
+            role="tablist"
+            aria-label="Conteúdos educativos"
           >
-            {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/60" />
-
-            {/* Sheet container */}
-            <motion.div
-              ref={dialogRef}
-              tabIndex={-1}
-              className={[
-                'relative bg-white text-primary shadow-xl focus:outline-none',
-                'w-[95%] max-w-md mx-auto',
-                'max-h-[70dvh]',
-                'rounded-t-xl',
-                'flex flex-col overscroll-contain',
-              ].join(' ')}
-              onClick={(e) => e.stopPropagation()}
-              initial={{ y: 28, opacity: 1 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 48, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-              drag="y"
-              dragDirectionLock
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={{ top: 0, bottom: 0.55 }}
-              style={{ y }}
-              onDragEnd={handleDragEnd}
-            >
-              {/* Header compacto + handle + X */}
-              <div className="sticky top-0 z-10 bg-white">
+            {TOPICS.map((t) => {
+              const activeTab = t.id === active;
+              return (
                 <button
-                  className="absolute top-2 right-2 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
-                  onClick={() => setMobileOpen(null)}
-                  aria-label="Fechar"
+                  key={t.id}
+                  onClick={() => setActive(t.id)}
+                  role="tab"
+                  aria-selected={activeTab}
+                  aria-controls={`panel-${t.id}`}
+                  className={[
+                    'snap-start shrink-0 inline-flex items-center gap-2',
+                    'min-h-11 px-3 py-2 rounded-xl text-sm border transition-all',
+                    // ativo: apenas borda e destaque sutil (sem preencher o fundo)
+                    activeTab
+                      ? 'bg-white text-primary border-accent ring-2 ring-accent/40'
+                      : 'bg-white text-primary border-gray-200 hover:border-accent hover:ring-1 hover:ring-accent/30'
+                  ].join(' ')}
                 >
-                  <FaTimes />
+                  <span className="text-base">{t.icon}</span>
+                  <span className="font-medium">{t.name}</span>
                 </button>
-                <div className="flex flex-col items-center pt-2 pb-2">
-                  <span className="h-1.5 w-10 rounded-full bg-gray-300" aria-hidden />
-                </div>
-                <div className="px-4 pb-2">
-                  <h4 className="text-lg font-bold">{mobileActive.title}</h4>
-                  <p className="text-secondary text-sm">{mobileActive.subtitle}</p>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Painel do tópico */}
+        <motion.div
+          key={topic.id}
+          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
+          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+          role="tabpanel"
+          id={`panel-${topic.id}`}
+          aria-labelledby={topic.id}
+        >
+          {/* Bloco principal */}
+          <div className="lg:col-span-2 bg-light rounded-2xl p-5 shadow-sm">
+            <h3 className="text-xl font-bold text-primary mb-1">{topic.headline}</h3>
+            <p className="text-secondary mb-4">{topic.intro}</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold mb-2">Por que importa</h4>
+                <ul className="space-y-2">
+                  {topic.why.map((item, i) => (
+                    <li key={i} className="flex items-start">
+                      <FaCheckCircle className="mt-0.5 mr-2 text-accent" />
+                      <span className="text-secondary">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Como aplicar</h4>
+                <ol className="space-y-2 list-decimal list-inside">
+                  {topic.steps.map((step, i) => (
+                    <li key={i} className="text-secondary">{step}</li>
+                  ))}
+                </ol>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Métricas que importam</h4>
+                <div className="flex flex-wrap gap-2">
+                  {topic.metrics.map((m, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-full bg-white text-primary text-xs shadow-sm">
+                      {m}
+                    </span>
+                  ))}
                 </div>
               </div>
 
-              {/* Conteúdo rolável com accordions (compact) */}
-              <div
-                className="min-h-0 flex-1 overflow-y-auto px-4 pb-20"
-                style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
-              >
-                <DetailsBlock offer={mobileActive} waHref={waHref} compact />
+              <div className="rounded-xl border p-3 bg-white">
+                <p className="text-[13px] font-semibold text-primary">Mito vs. Fato</p>
+                <p className="text-secondary mt-1">
+                  <span className="font-semibold text-primary">Mito:</span> {topic.myth}
+                </p>
+                <p className="text-secondary mt-1">
+                  <span className="font-semibold text-primary">Fato:</span> {topic.fact}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <h4 className="font-semibold mb-2">Checklist rápido</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {topic.checklist.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg bg-white p-2 shadow-sm">
+                    <FaCheckCircle className="text-accent" />
+                    <span className="text-sm text-secondary">{c}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Calculadora + CTA */}
+          <div className="flex flex-col gap-6">
+            <div className="rounded-2xl border p-5 bg-white shadow-sm">
+              <h4 className="font-semibold text-primary mb-1">Calculadora de impacto</h4>
+              <p className="text-secondary text-sm mb-3">
+                Estime leads extras ao melhorar conversão (ex.: com performance/UX/SEO).
+              </p>
+
+              <label className="block text-sm mb-1">Visitas/mês</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min={0}
+                className="w-full rounded-lg border px-3 py-2 mb-3"
+                value={visits}
+                onChange={(e) => setVisits(Math.max(0, Number(e.target.value || 0)))}
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm mb-1">Taxa atual (%)</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    min={0}
+                    className="w-full rounded-lg border px-3 py-2"
+                    value={conv}
+                    onChange={(e) => setConv(Math.max(0, Number(e.target.value || 0)))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Melhoria (%)</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    step="1"
+                    min={0}
+                    className="w-full rounded-lg border px-3 py-2"
+                    value={lift}
+                    onChange={(e) => setLift(Math.max(0, Number(e.target.value || 0)))}
+                  />
+                </div>
               </div>
 
-              {/* Footer sticky (apenas CTA principal) */}
-              <div className="sticky bottom-0 z-10 bg-white/95 backdrop-blur border-t px-3 py-2">
-                <a
-                  href={waHref}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
-                  data-gtag="click_whatsapp"
-                >
-                  <FaWhatsapp className="text-base" />
-                  WhatsApp
-                </a>
+              <div className="mt-4 rounded-lg bg-light p-3">
+                <p className="text-sm text-secondary">
+                  Leads/mês (atual): <span className="font-semibold text-primary">{baselineLeads}</span>
+                </p>
+                <p className="text-sm text-secondary">
+                  Leads/mês (estimado): <span className="font-semibold text-primary">{improvedLeads}</span>
+                </p>
+                <p className="text-sm text-primary font-semibold mt-1">
+                  Ganho estimado: {delta >= 0 ? '+' : ''}{delta} leads/mês
+                </p>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+
+            <a
+              href={waHref}
+              className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
+            >
+              <FaWhatsapp className="text-base" />
+              Quero aplicar isso no meu projeto
+            </a>
+          </div>
+        </motion.div>
+      </div>
     </section>
-  );
-}
-
-/* --- BLOCO REUTILIZÁVEL --- */
-function DetailsBlock({
-  offer,
-  waHref,
-  compact = false,
-}: {
-  offer: Offer;
-  waHref: string;
-  compact?: boolean;
-}) {
-  // Versão compacta (MOBILE): accordions e sem CTA interno (CTA fica no footer do sheet)
-  if (compact) {
-    return (
-      <div className="space-y-2">
-        <details className="rounded-lg border p-2">
-          <summary className="font-semibold text-sm cursor-pointer select-none">Resultados que você pode esperar</summary>
-          <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
-            {offer.outcomes.map((item, i) => <li key={i}>{item}</li>)}
-          </ul>
-        </details>
-
-        <details className="rounded-lg border p-2">
-          <summary className="font-semibold text-sm cursor-pointer select-none">O que entregamos</summary>
-          <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
-            {offer.solutions.map((item, i) => <li key={i}>{item}</li>)}
-          </ul>
-          <div className="mt-3">
-            <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1">Stack</p>
-            <div className="flex flex-wrap gap-2">
-              {offer.stack.map((t, i) => (
-                <span key={i} className="px-2.5 py-1 rounded-full bg-white text-primary text-xs shadow-sm">
-                  {t}
-                </span>
-              ))}
-            </div>
-          </div>
-        </details>
-
-        <details className="rounded-lg border p-2">
-          <summary className="font-semibold text-sm cursor-pointer select-none">KPIs típicos</summary>
-          <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
-            {offer.kpis.map((k, i) => <li key={i}>{k}</li>)}
-          </ul>
-        </details>
-
-        <p className="text-secondary text-xs">Aracaju-SE • Atendemos todo o Brasil</p>
-      </div>
-    );
-  }
-
-  // Versão completa (DESKTOP)
-  return (
-    <div>
-      <header className="mb-5">
-        <div className="flex items-center gap-3 mb-1">
-          {offer.icon}
-          <h4 className="text-xl font-bold text-primary">{offer.title}</h4>
-        </div>
-        <p className="text-secondary">{offer.subtitle}</p>
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div>
-          <h5 className="text-lg font-semibold text-primary mb-2">Resultados que você pode esperar</h5>
-          <ul className="space-y-2">
-            {offer.outcomes.map((item, i) => (
-              <li key={i} className="flex items-start">
-                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full" />
-                <span className="text-secondary">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <h5 className="text-lg font-semibold text-primary mb-2">O que entregamos</h5>
-          <ul className="space-y-2">
-            {offer.solutions.map((item, i) => (
-              <li key={i} className="flex items-start">
-                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full" />
-                <span className="text-secondary">{item}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4">
-            <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1">Stack</p>
-            <div className="flex flex-wrap gap-2">
-              {offer.stack.map((t, i) => (
-                <span key={i} className="px-2.5 py-1 rounded-full bg-white text-primary text-xs shadow-sm">
-                  {t}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h5 className="text-lg font-semibold text-primary mb-2">KPIs típicos</h5>
-          <ul className="space-y-2 mb-5">
-            {offer.kpis.map((k, i) => (
-              <li key={i} className="flex items-start">
-                <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full" />
-                <span className="text-secondary">{k}</span>
-              </li>
-            ))}
-          </ul>
-
-          <a
-            href={waHref}
-            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
-            data-gtag="click_whatsapp"
-          >
-            <FaWhatsapp className="text-base" />
-            Falar sobre este projeto
-          </a>
-
-          <p className="text-secondary text-xs mt-3">Aracaju-SE • Atendemos todo o Brasil</p>
-        </div>
-      </div>
-    </div>
   );
 }

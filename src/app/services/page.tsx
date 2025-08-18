@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { FaCode, FaRobot, FaLaptopCode, FaTimes, FaWhatsapp, FaArrowRight } from 'react-icons/fa';
 
 type ServiceKey = 'dev' | 'automation' | 'custom';
@@ -37,7 +37,7 @@ const CARDS: {
   },
 ];
 
-// conteúdo detalhado dos modais (aplicando o que discutimos: benefício, diferenciais, GA4/SEO, entregáveis)
+// conteúdo detalhado dos modais
 const DETAILS: Record<
   ServiceKey,
   {
@@ -120,6 +120,17 @@ const DETAILS: Record<
 export default function ServicesSection() {
   const [openKey, setOpenKey] = useState<ServiceKey | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const y = useMotionValue(0);
+
+  // detectar mobile
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
 
   const waHref = useMemo(() => {
     const phone = '5579998807035';
@@ -132,24 +143,34 @@ export default function ServicesSection() {
     return `https://wa.me/${phone}?text=${text}&${utms}`;
   }, []);
 
-  // Fechar com ESC e travar scroll de fundo quando modal aberto
+  // trava o fundo
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenKey(null);
-    };
-    document.addEventListener('keydown', onKey);
-    if (openKey) {
-      document.body.style.overflow = 'hidden';
-      // foco inicial no modal
-      setTimeout(() => dialogRef.current?.focus(), 0);
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (!openKey) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => dialogRef.current?.focus(), 0);
     return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+      document.body.style.overflow = prev;
     };
   }, [openKey]);
+
+  // ESC para fechar
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenKey(null);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  const handleDragEnd = (_: any, info: { offset: { y: number }; velocity: { y: number } }) => {
+    const dragged = info.offset.y;
+    const velo = info.velocity.y;
+    if (dragged > 120 || velo > 800) {
+      setOpenKey(null);
+      y.set(0);
+    } else {
+      y.set(0);
+    }
+  };
 
   return (
     <section className="py-16 bg-light">
@@ -211,7 +232,7 @@ export default function ServicesSection() {
         </div>
       </div>
 
-      {/* Modais */}
+      {/* Modal (desktop) / Bottom Sheet (mobile) */}
       <AnimatePresence>
         {openKey && (
           <motion.div
@@ -219,7 +240,6 @@ export default function ServicesSection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            aria-hidden={false}
             role="dialog"
             aria-modal="true"
             onClick={() => setOpenKey(null)}
@@ -227,99 +247,191 @@ export default function ServicesSection() {
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/60" />
 
-            {/* Dialog */}
+            {/* Sheet / Modal container */}
             <motion.div
               id={`dialog-${openKey}`}
               ref={dialogRef}
               tabIndex={-1}
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 20, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-              className="relative w-full sm:max-w-2xl mx-auto bg-white text-primary rounded-2xl shadow-xl p-6 sm:p-8 m-4"
+              className={[
+                'relative bg-white text-primary shadow-xl focus:outline-none',
+                // compacto e adaptável no mobile
+                'w-[95%] sm:w-auto',
+                'max-h-[70dvh] sm:max-h-none',
+                'rounded-t-xl sm:rounded-2xl',
+                'mx-auto',
+                'flex flex-col overscroll-contain',
+              ].join(' ')}
               onClick={(e) => e.stopPropagation()}
+              initial={isMobile ? { y: 28, opacity: 1 } : { y: 20, opacity: 0 }}
+              animate={isMobile ? { y: 0, opacity: 1 } : { y: 0, opacity: 1 }}
+              exit={isMobile ? { y: 50, opacity: 1 } : { y: 10, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              drag={isMobile ? 'y' : false}
+              dragDirectionLock
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.55 }}
+              style={{ y }}
+              onDragEnd={isMobile ? handleDragEnd : undefined}
             >
+              {/* Header mobile com handle e X */}
+              <div className="sm:hidden sticky top-0 z-10 bg-white">
+                <button
+                  className="absolute top-2 right-2 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
+                  onClick={() => setOpenKey(null)}
+                  aria-label="Fechar modal"
+                >
+                  <FaTimes />
+                </button>
+                <div className="flex flex-col items-center pt-2 pb-2">
+                  <span className="h-1.5 w-10 rounded-full bg-gray-300" aria-hidden />
+                </div>
+              </div>
+
+              {/* Botão X desktop */}
               <button
-                className="absolute top-3 right-3 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
+                className="hidden sm:inline-flex absolute top-3 right-3 p-2 rounded-lg text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-accent"
                 onClick={() => setOpenKey(null)}
                 aria-label="Fechar modal"
               >
                 <FaTimes />
               </button>
 
-              {(() => {
-                const d = DETAILS[openKey];
-                return (
-                  <>
-                    <h3 className="text-2xl font-bold mb-2">{d.headline}</h3>
-                    <p className="text-secondary mb-6">{d.sub}</p>
+              {/* Conteúdo: mobile = accordions compactos; desktop = grid completo */}
+              <div
+                className={[
+                  // padding reduzido no mobile
+                  'px-4 py-3 sm:p-8',
+                  // ESSENCIAL: ocupa espaço restante e permite scroll
+                  'min-h-0 flex-1 overflow-y-auto',
+                  // espaço para não colidir com o footer sticky do mobile
+                  'pb-20 sm:pb-8',
+                ].join(' ')}
+                style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+              >
+                {(() => {
+                  const d = DETAILS[openKey];
+                  return (
+                    <>
+                      <h3 className="text-lg sm:text-2xl font-bold mb-2">{d.headline}</h3>
+                      <p className="text-secondary text-sm sm:text-base mb-4 sm:mb-6">{d.sub}</p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-semibold mb-2">Benefícios</h4>
-                        <ul className="space-y-2 text-sm">
-                          {d.benefits.map((b, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Para quem é</h4>
-                        <ul className="space-y-2 text-sm">
-                          {d.forWho.map((b, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Entregáveis</h4>
-                        <ul className="space-y-2 text-sm">
-                          {d.deliverables.map((b, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold mb-2">Prazos típicos</h4>
-                        <ul className="space-y-2 text-sm">
-                          {d.timeline.map((b, i) => (
-                            <li key={i} className="flex items-start">
-                              <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
+                      {isMobile ? (
+                        <div className="space-y-2">
+                          <details className="rounded-lg border p-2">
+                            <summary className="font-semibold text-sm cursor-pointer select-none">Benefícios</summary>
+                            <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+                              {d.benefits.map((b, i) => (
+                                <li key={i}>{b}</li>
+                              ))}
+                            </ul>
+                          </details>
+                          <details className="rounded-lg border p-2">
+                            <summary className="font-semibold text-sm cursor-pointer select-none">Para quem é</summary>
+                            <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+                              {d.forWho.map((b, i) => (
+                                <li key={i}>{b}</li>
+                              ))}
+                            </ul>
+                          </details>
+                          <details className="rounded-lg border p-2">
+                            <summary className="font-semibold text-sm cursor-pointer select-none">Entregáveis</summary>
+                            <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+                              {d.deliverables.map((b, i) => (
+                                <li key={i}>{b}</li>
+                              ))}
+                            </ul>
+                          </details>
+                          <details className="rounded-lg border p-2">
+                            <summary className="font-semibold text-sm cursor-pointer select-none">Prazos típicos</summary>
+                            <ul className="mt-2 space-y-1.5 text-sm pl-4 list-disc">
+                              {d.timeline.map((b, i) => (
+                                <li key={i}>{b}</li>
+                              ))}
+                            </ul>
+                          </details>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div>
+                            <h4 className="font-semibold mb-2">Benefícios</h4>
+                            <ul className="space-y-2 text-sm">
+                              {d.benefits.map((b, i) => (
+                                <li key={i} className="flex items-start">
+                                  <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                  <span>{b}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold mb-2">Para quem é</h4>
+                            <ul className="space-y-2 text-sm">
+                              {d.forWho.map((b, i) => (
+                                <li key={i} className="flex items-start">
+                                  <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                  <span>{b}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold mb-2">Entregáveis</h4>
+                            <ul className="space-y-2 text-sm">
+                              {d.deliverables.map((b, i) => (
+                                <li key={i} className="flex items-start">
+                                  <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                  <span>{b}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold mb-2">Prazos típicos</h4>
+                            <ul className="space-y-2 text-sm">
+                              {d.timeline.map((b, i) => (
+                                <li key={i} className="flex items-start">
+                                  <span className="mt-2 mr-2 w-2 h-2 bg-accent rounded-full"></span>
+                                  <span>{b}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
 
-                    <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                      <a
-                        href={waHref}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
-                        data-gtag="click_whatsapp"
-                      >
-                        <FaWhatsapp className="text-base" />
-                        Solicitar orçamento
-                      </a>
-                      <button
-                        onClick={() => setOpenKey(null)}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
-                      >
-                        Fechar
-                      </button>
-                    </div>
-                  </>
-                );
-              })()}
+              {/* Footer mobile: APENAS CTA principal (WhatsApp) */}
+              <div className="sm:hidden sticky bottom-0 z-10 bg-white/95 backdrop-blur border-t px-3 py-2">
+                <a
+                  href={waHref}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
+                  data-gtag="click_whatsapp"
+                >
+                  <FaWhatsapp className="text-base" />
+                  WhatsApp
+                </a>
+              </div>
+
+              {/* Footer desktop (como antes) */}
+              <div className="hidden sm:flex px-8 pb-8 pt-4 gap-3">
+                <a
+                  href={waHref}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
+                  data-gtag="click_whatsapp"
+                >
+                  <FaWhatsapp className="text-base" />
+                  Solicitar orçamento
+                </a>
+                <button
+                  onClick={() => setOpenKey(null)}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
+                >
+                  Fechar
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
