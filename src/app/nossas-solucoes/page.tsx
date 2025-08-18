@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ReactNode, CSSProperties } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import {
@@ -8,8 +8,8 @@ import {
   FaWhatsapp, FaTimes
 } from 'react-icons/fa';
 
-// Para usar no menu se quiser:
-export const NOSSAS_SOLUCOES_ROUTE = '/nossas-solucoes';
+// Se quiser usar a rota em outros lugares, mova para src/lib/routes.ts
+// export const ROUTE_NOSSAS_SOLUCOES = '/nossas-solucoes';
 
 type Offer = {
   id: string;
@@ -96,16 +96,18 @@ export default function WhatWeDoSection() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(null); };
     document.addEventListener('keydown', onKey);
+
+    let prevOverflow = '';
     if (mobileOpen) {
-      const prev = document.body.style.overflow;
+      prevOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       setTimeout(() => dialogRef.current?.focus(), 0);
-      return () => {
-        document.body.style.overflow = prev;
-        document.removeEventListener('keydown', onKey);
-      };
     }
-    return () => document.removeEventListener('keydown', onKey);
+
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (mobileOpen) document.body.style.overflow = prevOverflow;
+    };
   }, [mobileOpen]);
 
   const active = OFFERS.find(o => o.id === selected)!;
@@ -146,8 +148,9 @@ export default function WhatWeDoSection() {
           aria-hidden="true"
         >
           <source src="/Banner_Nossas_SoluçõesVD.mp4" type="video/mp4" />
-          {/* Opcional:
-          <source src="/Banner_Nossas_SolucoesVD.webm" type="video/webm" />
+          {/*
+            Se preferir evitar acentos no nome do arquivo, renomeie e troque a linha acima.
+            Ex.: <source src="/Banner_Nossas_SolucoesVD.mp4" type="video/mp4" />
           */}
         </video>
       </div>
@@ -263,7 +266,7 @@ export default function WhatWeDoSection() {
               {/* Conteúdo rolável com accordions (compact) */}
               <div
                 className="min-h-0 flex-1 overflow-y-auto px-4 pb-20"
-                style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+                style={{ WebkitOverflowScrolling: 'touch' } as CSSProperties}
               >
                 <DetailsBlock offer={mobileActive} waHref={waHref} compact />
               </div>
