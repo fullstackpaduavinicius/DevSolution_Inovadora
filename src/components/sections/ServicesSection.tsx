@@ -146,16 +146,11 @@ export default function ServicesSection() {
   // Trava o scroll do fundo enquanto o modal/sheet estiver aberto
   useEffect(() => {
     if (openKey) {
-      const original = {
-        overflow: document.body.style.overflow,
-        touchAction: (document.body.style as any).touchAction,
-      };
+      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-      (document.body.style as any).touchAction = 'none'; // evita scroll em iOS/Android por trás
       setTimeout(() => dialogRef.current?.focus(), 0);
       return () => {
-        document.body.style.overflow = original.overflow;
-        (document.body.style as any).touchAction = original.touchAction;
+        document.body.style.overflow = originalOverflow;
       };
     }
   }, [openKey]);
@@ -267,10 +262,11 @@ export default function ServicesSection() {
                 'sm:rounded-2xl',
                 'rounded-t-2xl',
                 'sm:max-w-2xl',
-                // mobile: altura e rolagem interna
-                'overflow-hidden overscroll-contain',
-                // aplica altura de sheet somente no mobile
-                isMobile ? 'h-[85dvh]' : '',
+                'overscroll-contain', // evita "puxar" o fundo
+                // layout em coluna para separar header, conteúdo rolável e footer
+                'flex flex-col',
+                // altura de sheet no mobile
+                isMobile ? 'h-[90dvh]' : '',
               ].join(' ')}
               onClick={(e) => e.stopPropagation()}
               initial={isMobile ? { y: 40, opacity: 1 } : { y: 20, opacity: 0 }}
@@ -310,9 +306,15 @@ export default function ServicesSection() {
               {/* Conteúdo rolável */}
               <div
                 className={[
-                  'p-6 sm:p-8',
-                  isMobile ? 'overflow-y-auto h-full pb-[max(env(safe-area-inset-bottom),16px)]' : '',
+                  'px-6 sm:px-8 pt-2 sm:pt-8',
+                  // ESSENCIAL: permite o scroll do conteúdo tomando o espaço restante
+                  'min-h-0 flex-1 overflow-y-auto',
+                  // espaço extra no fundo para não ficar por baixo do footer mobile
+                  'pb-24 sm:pb-8',
                 ].join(' ')}
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                } as React.CSSProperties}
               >
                 {(() => {
                   const d = DETAILS[openKey];
@@ -367,26 +369,45 @@ export default function ServicesSection() {
                           </ul>
                         </div>
                       </div>
-
-                      <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                        <a
-                          href={waHref}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
-                          data-gtag="click_whatsapp"
-                        >
-                          <FaWhatsapp className="text-base" />
-                          Solicitar orçamento
-                        </a>
-                        <button
-                          onClick={() => setOpenKey(null)}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
-                        >
-                          Fechar
-                        </button>
-                      </div>
                     </>
                   );
                 })()}
+              </div>
+
+              {/* Footer fixo no MOBILE (desktop mantém dentro do fluxo) */}
+              <div className="sm:hidden sticky bottom-0 z-10 bg-white/95 backdrop-blur border-t px-4 py-3 flex gap-3">
+                <a
+                  href={waHref}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
+                  data-gtag="click_whatsapp"
+                >
+                  <FaWhatsapp className="text-base" />
+                  Solicitar orçamento
+                </a>
+                <button
+                  onClick={() => setOpenKey(null)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
+                >
+                  Fechar
+                </button>
+              </div>
+
+              {/* Footer em DESKTOP (fica como antes) */}
+              <div className="hidden sm:flex px-8 pb-8 pt-4 gap-3">
+                <a
+                  href={waHref}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
+                  data-gtag="click_whatsapp"
+                >
+                  <FaWhatsapp className="text-base" />
+                  Solicitar orçamento
+                </a>
+                <button
+                  onClick={() => setOpenKey(null)}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-primary text-light hover:opacity-90 transition"
+                >
+                  Fechar
+                </button>
               </div>
             </motion.div>
           </motion.div>
