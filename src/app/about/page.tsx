@@ -31,12 +31,12 @@ export default function AboutPage() {
             <h3 className="text-2xl font-bold text-primary mb-4">Quem somos</h3>
             <p className="text-secondary mb-4">
               A <span className="font-semibold">DevSolution Inovadora</span> nasceu da paixão por transformar ideias em
-              soluções digitais reais — sites modernos, e-commerces completos e sistemas sob medida, sempre orientados a
+              soluções digitais reais. Sites modernos, e-commerces completos e sistemas sob medida, sempre orientados a
               performance e conversão.
             </p>
             <p className="text-secondary mb-4">
-              Baseados em <span className="font-semibold">Aracaju-SE</span>, atendemos clientes em todo o Brasil com um
-              processo de trabalho claro, comunicação direta e entregas mensuráveis via <span className="font-semibold">GA4</span>.
+              Com origem em <span className="font-semibold">Aracaju-SE</span>, atendemos clientes em todo o Brasil com um
+              processo de trabalho claro, comunicação direta e entregas mensuráveis.
             </p>
 
             {/* Destaques rápidos */}
@@ -62,13 +62,7 @@ export default function AboutPage() {
                   <p className="text-secondary text-sm">Auth (JWT/OAuth), RBAC e headers protegidos.</p>
                 </div>
               </li>
-              <li className="flex items-start gap-3">
-                <FaMapMarkerAlt className="text-accent mt-1" />
-                <div>
-                  <p className="text-primary font-medium">Local + nacional</p>
-                  <p className="text-secondary text-sm">Aracaju-SE e atendimento em todo o Brasil.</p>
-                </div>
-              </li>
+              
             </ul>
           </div>
 

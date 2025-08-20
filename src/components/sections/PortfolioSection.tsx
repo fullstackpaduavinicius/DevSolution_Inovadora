@@ -149,7 +149,7 @@ export default function EducationSection() {
 
   const waHref = useMemo(() => {
     const phone = '5579998807035';
-    const text = encodeURIComponent('Olá! Quero ajuda para aplicar as boas práticas do guia.');
+    const text = encodeURIComponent('Olá! Li o guia e me interessei. Quero aplicar no meu projeto.');
     const utms = new URLSearchParams({ utm_source: 'site', utm_medium: 'education_section', utm_campaign: 'lead_devsolution' }).toString();
     return `https://wa.me/${phone}?text=${text}&${utms}`;
   }, []);

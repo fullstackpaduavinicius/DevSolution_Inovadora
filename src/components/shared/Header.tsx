@@ -12,7 +12,7 @@ const NAV = [
   { label: 'Nossas Soluções', href: '/nossas-solucoes' },
   { label: 'Blog', href: '/blog' },
   { label: 'Contato', href: '/contact' },
-  { label: 'Trabalhe Conosco', href: '/trabalhe-conosco' }, // Corrigido para usar hífen
+   // Corrigido para usar hífen
 ];
 
 export default function Header() {
