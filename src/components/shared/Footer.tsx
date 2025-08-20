@@ -56,7 +56,7 @@ export default function Footer() {
           </nav>
 
           {/* Soluções */}
-          <nav aria-label="Soluções">
+         <nav aria-label="Soluções">
             <h4 className="text-lg font-semibold mb-4">Soluções</h4>
             <ul className="space-y-2">
               <li><Link href="/servicos/sites-e-aplicacoes" className="hover:text-accent">Sites & Aplicações</Link></li>
@@ -69,10 +69,10 @@ export default function Footer() {
           </nav>
 
           {/* Social / Contato */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Conecte-se</h4>
+           <div>
+            <h4 className="text-lg font-semibold mb-4"></h4>
             <div className="flex gap-4">
-              <a
+              {/*<a
                 href="https://github.com/fullstackpaduavinicius"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -80,8 +80,8 @@ export default function Footer() {
                 aria-label="GitHub"
               >
                 <FaGithub />
-              </a>
-              <a
+              </a>*/}
+              {/*<a
                 href="https://www.linkedin.com/in/ivan-vin%C3%ADcius-832821330/"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -89,8 +89,8 @@ export default function Footer() {
                 aria-label="LinkedIn"
               >
                 <FaLinkedin />
-              </a>
-              <a
+              </a>*/}
+              {/*<a
                 href="https://www.instagram.com/paduaviniciusdev"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -98,13 +98,13 @@ export default function Footer() {
                 aria-label="Instagram"
               >
                 <FaInstagram />
-              </a>
+              </a>*/}
             </div>
 
-            <div className="mt-6 text-sm text-light/80 space-y-1">
+            {/*<div className="mt-6 text-sm text-light/80 space-y-1">
               <p><span className="text-light/60">E-mail:</span> <a className="hover:text-accent" href="mailto:fullstackpaduavinicus@gmail.com">fullstackpaduavinicus@gmail.com</a></p>
               <p><span className="text-light/60">WhatsApp:</span> <a className="hover:text-accent" href={waHref}>+55 (79) 99880-7035</a></p>
-            </div>
+            </div>*/}
           </div>
         </div>
       </div>

@@ -4,7 +4,6 @@ import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Tipos
-
 type Post = {
   slug: string;
   title: string;
@@ -96,63 +95,65 @@ export default function BlogPage() {
   }, [featured, rest, category, tag, query]);
 
   return (
-    <main className="pt-20 pb-12">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Hero */}
-        <section id="topo" className="mb-8 scroll-mt-20">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary">Blog</h1>
-          <p className="text-secondary mt-2 max-w-2xl">
-            Conteúdo prático sobre desenvolvimento web, e-commerce, automações e mensuração com GA4 — sempre focado em
-            resultado.
-          </p>
-        </section>
+    <main
+      className="pt-20 pb-12 relative min-h-screen bg-fixed bg-center bg-cover bg-no-repeat"
+      style={{ backgroundImage: "url('/backgroundblog.png')" }}
+    >
+      {/* Overlay escuro para legibilidade sobre o background */}
+      <div className="pointer-events-none absolute inset-0 bg-black/55"></div>
 
-        {/* Busca e filtros */}
-        <section className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between mb-8">
-          <div className="flex flex-1 gap-3">
-            <div className="flex-1">
-              <label htmlFor="q" className="sr-only">Buscar</label>
-              <input
-                id="q"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar por título, tag ou assunto…"
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-              />
+      {/* Conteúdo acima do overlay */}
+      <div className="relative z-10">
+        <div className="max-w-6xl mx-auto px-4">
+          {/* Hero (sem bg próprio, texto claro para contrastar com o fundo da página) */}
+          <section id="topo" className="mb-8 scroll-mt-20">
+            <h1 className="text-3xl md:text-4xl font-bold text-white">Blog</h1>
+            <p className="mt-2 max-w-2xl text-white/90">
+              Conteúdo prático sobre desenvolvimento web, e-commerce, automações e mensuração com GA4 — sempre focado em
+              resultado.
+            </p>
+          </section>
+
+          {/* Busca e filtros */}
+          <section className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between mb-8">
+            <div className="flex flex-1 gap-3">
+              <div className="flex-1">
+                <label htmlFor="q" className="sr-only">Buscar</label>
+                <input
+                  id="q"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar por título, tag ou assunto…"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div className="hidden md:flex gap-3">
+                <CategorySelect value={category} onChange={(v) => setCategory(v)} />
+                <TagSelect value={tag} onChange={setTag} options={tagsAll} />
+              </div>
             </div>
-            <div className="hidden md:flex gap-3">
-              <CategorySelect value={category} onChange={(v) => setCategory(v)} />
-              <TagSelect value={tag} onChange={setTag} options={tagsAll} />
+
+            {/* Pílulas (mobile) */}
+            <div className="md:hidden flex gap-2 overflow-x-auto no-scrollbar">
+              <Pills items={categoryOptions} value={category} onChange={(v) => setCategory(v as Category)} />
+              <Pills items={tagsAll} value={tag} onChange={setTag} />
             </div>
-          </div>
+          </section>
 
-          {/* Pílulas (mobile) */}
-          <div className="md:hidden flex gap-2 overflow-x-auto no-scrollbar">
-            <Pills items={categoryOptions} value={category} onChange={(v) => setCategory(v as Category)} />
-            <Pills items={tagsAll} value={tag} onChange={setTag} />
-          </div>
-        </section>
-
-        {/* Destaque */}
-        {filtered[0] && filtered[0].slug === featured?.slug && (
-          <FeaturedCard post={filtered[0]} onOpen={() => setActivePost(filtered[0])} />
-        )}
-
-        {/* Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {filtered
-            .filter((p) => p.slug !== featured?.slug)
-            .map((post, i) => (
+          {/* Grid unificado (todos os cards do mesmo tamanho) */}
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((post, i) => (
               <PostCard key={post.slug} post={post} index={i} onOpen={() => setActivePost(post)} />
             ))}
-        </section>
+          </section>
 
-        {/* Vazio */}
-        {filtered.length === 0 && (
-          <div className="mt-16 text-center">
-            <p className="text-secondary">Nenhum artigo encontrado. Tente outros filtros ou termos.</p>
-          </div>
-        )}
+          {/* Vazio */}
+          {filtered.length === 0 && (
+            <div className="mt-16 text-center">
+              <p className="text-white/80">Nenhum artigo encontrado. Tente outros filtros ou termos.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modal */}
@@ -171,49 +172,6 @@ function CategoryBadge({ children }: { children: React.ReactNode }) {
   );
 }
 
-function FeaturedCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="rounded-2xl overflow-hidden border border-gray-200 bg-white"
-    >
-      {post.cover ? (
-        <img src={post.cover} alt="cover" className="w-full h-auto object-contain" />
-      ) : (
-        <div className="h-56 md:h-72 bg-gray-100" />
-      )}
-
-      <div className="p-5 md:p-6">
-        <div className="flex items-center gap-3 mb-2">
-          <CategoryBadge>{post.category}</CategoryBadge>
-        </div>
-        <h2 className="text-xl md:text-2xl font-bold text-primary mb-2">{post.title}</h2>
-        <p className="text-secondary">{post.excerpt}</p>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {post.tags.map((t) => (
-            <span key={t} className="px-2 py-1 text-xs rounded bg-light text-primary">
-              {t}
-            </span>
-          ))}
-        </div>
-
-        <div className="mt-5">
-          <button
-            onClick={onOpen}
-            className="inline-block rounded-lg px-3 py-2 text-sm font-semibold bg-accent text-black hover:opacity-90 transition"
-            data-gtag="blog_open_featured_modal"
-          >
-            Ler artigo
-          </button>
-        </div>
-      </div>
-    </motion.article>
-  );
-}
-
 function PostCard({ post, index, onOpen }: { post: Post; index: number; onOpen: () => void }) {
   return (
     <motion.article
@@ -221,14 +179,18 @@ function PostCard({ post, index, onOpen }: { post: Post; index: number; onOpen: 
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       viewport={{ once: true }}
-      className="rounded-xl overflow-hidden border border-gray-200 bg-white flex flex-col"
+      className="rounded-xl overflow-hidden border border-gray-200 bg-white flex flex-col h-full"
     >
-      {post.cover ? (
-        <img src={post.cover} alt="cover" className="w-full h-auto object-contain" />
-      ) : (
-        <div className="h-40 bg-gray-100" />
-      )}
+      {/* Área da imagem com altura fixa e sem corte */}
+      <div className="h-40 md:h-48 bg-gray-50 flex items-center justify-center">
+        {post.cover ? (
+          <img src={post.cover} alt="cover" className="h-full w-full object-contain" />
+        ) : (
+          <div className="h-full w-full" />
+        )}
+      </div>
 
+      {/* Conteúdo */}
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-center gap-3 mb-2">
           <CategoryBadge>{post.category}</CategoryBadge>

@@ -2,36 +2,15 @@
 
 import { useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import {
-  FaWhatsapp,
-  FaDownload,
-  FaCheckCircle,
-  FaShieldAlt,
-  FaPaperPlane,
-} from 'react-icons/fa';
+import { FaWhatsapp, FaDownload, FaShieldAlt, FaPaperPlane } from 'react-icons/fa';
 
-/**
- * Ajuste o caminho do PDF se necessário.
- * Coloque o arquivo em /public/guia-boas-praticas-devsolution.pdf
- */
-const PDF_PATH = '/guia-boas-praticas-devsolution.pdf';
+/** Caminho do PDF (coloque o arquivo em /public/dicasGA4.pdf) */
+const PDF_PATH = '/dicasGA4.pdf';
+/** E-mail para onde o FormSubmit enviará os leads */
+const FORMSUBMIT_EMAIL = 'devsolutionsinovadora@gmail.com';
 
-type Interest =
-  | 'SEO'
-  | 'Performance'
-  | 'GA4'
-  | 'Automações'
-  | 'E-commerce'
-  | 'MVP';
-
-const INTERESTS: Interest[] = [
-  'SEO',
-  'Performance',
-  'GA4',
-  'Automações',
-  'E-commerce',
-  'MVP',
-];
+type Interest = 'SEO' | 'Performance' | 'GA4' | 'Automações' | 'E-commerce' | 'MVP';
+const INTERESTS: Interest[] = ['SEO', 'Performance', 'GA4', 'Automações', 'E-commerce', 'MVP'];
 
 export default function LeadMagnetSection() {
   const prefersReducedMotion = useReducedMotion();
@@ -47,14 +26,15 @@ export default function LeadMagnetSection() {
   const [consent, setConsent] = useState(false);
   const [hpField, setHpField] = useState(''); // honeypot anti-spam
 
+  // nova pergunta
+  const [wantsNewSite, setWantsNewSite] = useState<'Sim' | 'Não'>('Não');
+
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const waHref = useMemo(() => {
     const phone = '5579998807035';
-    const text = encodeURIComponent(
-      'Olá! Baixei o guia de boas práticas e quero uma avaliação do meu site.'
-    );
+    const text = encodeURIComponent('Olá! Baixei o guia de boas práticas e quero uma avaliação do meu site.');
     const utms = new URLSearchParams({
       utm_source: 'site',
       utm_medium: 'lead_magnet',
@@ -70,29 +50,56 @@ export default function LeadMagnetSection() {
   const improvedLeads = Math.max(0, Math.round(v * ((c * 1.2) / 100))); // supõe +20% com boas práticas
   const delta = Math.max(0, improvedLeads - baselineLeads);
 
-  const emailValid = useMemo(
-    () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()),
-    [email]
-  );
+  const emailValid = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()), [email]);
   const nameValid = useMemo(() => name.trim().length >= 2, [name]);
   const consentValid = consent === true;
   const canSubmit = nameValid && emailValid && consentValid && !submitting;
 
   const toggleInterest = (i: Interest) => {
-    setInterests((prev) =>
-      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
-    );
+    setInterests((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]));
   };
 
+  // helper: download imediato
+  function triggerDownloadPdf() {
+    const link = document.createElement('a');
+    link.href = PDF_PATH;
+    link.download = 'dicasGA4.pdf';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  // envio do lead por e-mail (via FormSubmit – sem backend)
+  async function sendLeadViaEmail(data: Record<string, any>) {
+    const endpoint = `https://formsubmit.co/ajax/${FORMSUBMIT_EMAIL}`;
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        ...data,
+        _subject: 'Novo lead – Guia de Boas Práticas',
+        _template: 'table', // exibe organizado
+        _captcha: 'false',
+        _replyto: data.email,
+      }),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Falha ao enviar: ${txt}`);
+    }
+    return res.json();
+  }
+
+  // submit
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
-    if (hpField.trim() !== '') return; // honeypot -> ignora
+    if (hpField.trim() !== '') return; // honeypot
 
     try {
       setSubmitting(true);
 
-      // Opcional: dispare um evento GA4 se existir
+      // Evento GA4 (opcional)
       if (typeof window !== 'undefined' && (window as any).gtag) {
         (window as any).gtag('event', 'lead_magnet_submit', {
           event_category: 'Lead',
@@ -101,21 +108,37 @@ export default function LeadMagnetSection() {
         });
       }
 
-      // Aqui você pode integrar com sua API/CRM/Formspree.
-      // Como default, apenas marcamos como "enviado".
-      await new Promise((r) => setTimeout(r, 500)); // sensação de envio
+      // 1) muda UI para sucesso
       setSubmitted(true);
+
+      // 2) download imediato
+      triggerDownloadPdf();
+
+      // 3) envia e-mail em paralelo (não bloqueia o download)
+      sendLeadViaEmail({
+        name,
+        email,
+        businessType,
+        site,
+        wants_new_site: wantsNewSite, // 🔹 nova pergunta
+        interests: interests.join(', '),
+        visits: v,
+        conversion: c,
+        leads_atual: baselineLeads,
+        leads_estimado: improvedLeads,
+        ganho: `+${delta}`,
+        consent: consent ? 'sim' : 'não',
+        origem: typeof window !== 'undefined' ? window.location.href : '',
+      }).catch((err) => {
+        console.error('Erro ao enviar e-mail do lead:', err);
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <section
-      id="guia-gratuito"
-      className="bg-white py-14 scroll-mt-24"
-      aria-labelledby="guia-gratuito-heading"
-    >
+    <section id="guia-gratuito" className="bg-white py-14 scroll-mt-24" aria-labelledby="guia-gratuito-heading">
       <div className="max-w-6xl mx-auto px-4">
         {/* header */}
         <div className="text-center mb-8">
@@ -143,29 +166,15 @@ export default function LeadMagnetSection() {
           {/* lado esquerdo: pitch + destaques + calculadora pequena */}
           <div className="bg-light rounded-2xl p-5 shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Feature
-                title="Checklist prático"
-                desc="Itens acionáveis para melhorar em poucas horas."
-              />
-              <Feature
-                title="Exemplos e métricas"
-                desc="O que medir e como interpretar (GA4 incluído)."
-              />
-              <Feature
-                title="Aplicação real"
-                desc="Casos de uso: local, e-commerce, serviços e MVP."
-              />
-              <Feature
-                title="Sem enrolação"
-                desc="Direto ao ponto: foco em resultado e clareza."
-              />
+              <Feature title="Checklist prático" desc="Itens acionáveis para melhorar em poucas horas." />
+              <Feature title="Exemplos e métricas" desc="O que medir e como interpretar (GA4 incluído)." />
+              <Feature title="Aplicação real" desc="Casos de uso: local, e-commerce, serviços e MVP." />
+              <Feature title="Sem enrolação" desc="Direto ao ponto: foco em resultado e clareza." />
             </div>
 
             {/* mini calculadora */}
             <div className="mt-5 rounded-xl border bg-white p-4">
-              <p className="text-sm font-semibold text-primary">
-                Estime seu ganho de leads
-              </p>
+              <p className="text-sm font-semibold text-primary">Estime seu ganho de leads</p>
               <p className="text-xs text-secondary mb-3">
                 Considerando melhoria de <span className="font-semibold text-primary">+20%</span> com boas práticas.
               </p>
@@ -179,9 +188,7 @@ export default function LeadMagnetSection() {
                     min={0}
                     className="w-full rounded-lg border px-3 py-2"
                     value={visits}
-                    onChange={(e) =>
-                      setVisits(Math.max(0, Number(e.target.value || 0)))
-                    }
+                    onChange={(e) => setVisits(Math.max(0, Number(e.target.value || 0)))}
                   />
                 </div>
                 <div>
@@ -193,9 +200,7 @@ export default function LeadMagnetSection() {
                     min={0}
                     className="w-full rounded-lg border px-3 py-2"
                     value={conv}
-                    onChange={(e) =>
-                      setConv(Math.max(0, Number(e.target.value || 0)))
-                    }
+                    onChange={(e) => setConv(Math.max(0, Number(e.target.value || 0)))}
                   />
                 </div>
               </div>
@@ -205,24 +210,18 @@ export default function LeadMagnetSection() {
                 <DataPill label="Leads (estimado)" value={improvedLeads} />
                 <DataPill label="Ganho" value={`+${delta}`} />
               </div>
-            </div>
 
-            <div className="mt-4 flex items-center gap-2 text-secondary text-xs">
-              <FaShieldAlt />
-              Dados enviados com consentimento. Você pode sair quando quiser.
+              <div className="mt-4 flex items-center gap-2 text-secondary text-xs">
+                <FaShieldAlt />
+                Dados enviados com consentimento. Você pode sair quando quiser.
+              </div>
             </div>
           </div>
 
           {/* lado direito: formulário */}
           {!submitted ? (
-            <form
-              onSubmit={onSubmit}
-              noValidate
-              className="bg-white rounded-2xl p-5 shadow-sm border"
-            >
-              <p className="text-primary font-semibold mb-1">
-                Receba o PDF agora
-              </p>
+            <form onSubmit={onSubmit} noValidate className="bg-white rounded-2xl p-5 shadow-sm border">
+              <p className="text-primary font-semibold mb-1">Receba o PDF agora</p>
               <p className="text-secondary text-sm mb-4">
                 Enviaremos o link de download e dicas extras com base nos seus interesses.
               </p>
@@ -249,11 +248,7 @@ export default function LeadMagnetSection() {
                     required
                     aria-invalid={!nameValid}
                   />
-                  {!nameValid && (
-                    <p className="text-[12px] text-red-600 mt-1">
-                      Informe um nome válido.
-                    </p>
-                  )}
+                  {!nameValid && <p className="text-[12px] text-red-600 mt-1">Informe um nome válido.</p>}
                 </div>
 
                 <div className="sm:col-span-2">
@@ -267,11 +262,7 @@ export default function LeadMagnetSection() {
                     required
                     aria-invalid={!emailValid}
                   />
-                  {!emailValid && (
-                    <p className="text-[12px] text-red-600 mt-1">
-                      Digite um e-mail válido.
-                    </p>
-                  )}
+                  {!emailValid && <p className="text-[12px] text-red-600 mt-1">Digite um e-mail válido.</p>}
                 </div>
 
                 <div>
@@ -301,10 +292,21 @@ export default function LeadMagnetSection() {
                 </div>
               </div>
 
+              {/* nova pergunta */}
               <div className="mt-3">
-                <p className="text-sm font-medium text-primary mb-1">
-                  Interesses (personaliza o conteúdo)
-                </p>
+                <label className="block text-sm mb-1">Ainda não tem um site? Deseja criar um?</label>
+                <select
+                  className="w-full rounded-lg border px-3 py-2"
+                  value={wantsNewSite}
+                  onChange={(e) => setWantsNewSite(e.target.value as 'Sim' | 'Não')}
+                >
+                  <option value="Sim">Sim</option>
+                  <option value="Não">Não</option>
+                </select>
+              </div>
+
+              <div className="mt-3">
+                <p className="text-sm font-medium text-primary mb-1">Interesses (personaliza o conteúdo)</p>
                 <div className="flex flex-wrap gap-2">
                   {INTERESTS.map((i) => {
                     const active = interests.includes(i);
@@ -338,8 +340,8 @@ export default function LeadMagnetSection() {
                   required
                 />
                 <span>
-                  Concordo em receber o PDF e comunicações relacionadas.
-                  Podemos enviar dicas e conteúdos — você pode sair a qualquer momento.
+                  Concordo em receber o PDF e comunicações relacionadas. Podemos enviar dicas e conteúdos — você pode
+                  sair a qualquer momento.
                 </span>
               </label>
 
@@ -351,9 +353,7 @@ export default function LeadMagnetSection() {
                   disabled={!canSubmit}
                   className={[
                     'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition',
-                    canSubmit
-                      ? 'bg-accent text-black hover:opacity-90'
-                      : 'bg-gray-200 text-gray-500 cursor-not-allowed',
+                    canSubmit ? 'bg-accent text-black hover:opacity-90' : 'bg-gray-200 text-gray-500 cursor-not-allowed',
                   ].join(' ')}
                 >
                   <FaPaperPlane />
@@ -379,7 +379,7 @@ export default function LeadMagnetSection() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border">
               <h3 className="text-xl font-bold text-primary">Tudo certo! 🎉</h3>
               <p className="text-secondary mt-1">
-                Obrigado, {name.split(' ')[0] || 'por aqui'} — seu guia está pronto.
+                Obrigado, {name.split(' ')[0] || 'por aqui'} — seu guia foi enviado e o download começou.
               </p>
 
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -395,7 +395,7 @@ export default function LeadMagnetSection() {
                   download
                 >
                   <FaDownload />
-                  Baixar PDF
+                  Baixar PDF novamente
                 </a>
 
                 <a
@@ -410,8 +410,9 @@ export default function LeadMagnetSection() {
               {!!interests.length && (
                 <div className="mt-5">
                   <p className="text-sm text-secondary">
-                    Foco escolhido: <span className="font-medium text-primary">{interests.join(', ')}</span>.
-                    Em breve enviaremos dicas específicas.
+                    Foco escolhido:{' '}
+                    <span className="font-medium text-primary">{interests.join(', ')}</span>. Em breve enviaremos dicas
+                    específicas.
                   </p>
                 </div>
               )}

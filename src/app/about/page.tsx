@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { FaUserTie, FaLightbulb, FaHandshake, FaChartLine, FaBolt, FaShieldAlt, FaMapMarkerAlt, FaWhatsapp } from 'react-icons/fa';
+import { FaUserTie, FaLightbulb, FaHandshake, FaChartLine, FaBolt, FaShieldAlt, FaWhatsapp } from 'react-icons/fa';
 import SectionTitle from '@/components/ui/SectionTitle';
 
 export default function AboutPage() {
@@ -20,10 +20,7 @@ export default function AboutPage() {
     <main className="py-12">
       <div className="max-w-6xl mx-auto px-4">
         {/* Título + introdução */}
-        <SectionTitle
-          title=""
-          subtitle=""
-        />
+        <SectionTitle title="" subtitle="" />
 
         {/* Intro + imagem */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16">
@@ -62,13 +59,18 @@ export default function AboutPage() {
                   <p className="text-secondary text-sm">Auth (JWT/OAuth), RBAC e headers protegidos.</p>
                 </div>
               </li>
-              
             </ul>
           </div>
 
-          {/* Placeholder imagem/equipe/mockup */}
-          <div className="bg-gray-100 h-64 md:h-80 rounded-lg flex items-center justify-center">
-            <span className="text-secondary">[ Espaço para foto da equipe ou mockup de projetos ]</span>
+          {/* Imagem equipe/mockup */}
+          <div className="bg-gray-100 h-64 md:h-80 rounded-lg flex items-center justify-center overflow-hidden">
+            <img
+              src="/foldersobrenos.png"
+              alt="Equipe e projetos da DevSolution Inovadora"
+              className="w-full h-full object-contain"
+              loading="lazy"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
           </div>
         </section>
 

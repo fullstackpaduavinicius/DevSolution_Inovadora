@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import { FaQuoteLeft } from 'react-icons/fa';
 
+ {/* CTA final */}
 const testimonials = [
   {
     id: 1,

@@ -155,22 +155,30 @@ export default function EducationSection() {
   }, []);
 
   return (
-    <section className="bg-white py-14">
-      <div className="max-w-6xl mx-auto px-4">
+    <section
+      className="relative py-14 bg-center bg-cover bg-no-repeat"
+      style={{ backgroundImage: "url('/background1.png')" }}
+    >
+      {/* Overlay para contraste e legibilidade */}
+      <div className="absolute inset-0 bg-white/85"></div>
+
+      <div className="relative max-w-6xl mx-auto px-4">
         {/* Header */}
-        <div className="text-center mb-8">
-          <motion.h2
-            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
-            whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-3xl font-bold text-primary"
-          >
-            Aprenda rápido. Aplique hoje.
-          </motion.h2>
-          <p className="text-secondary mt-2 max-w-2xl mx-auto">
-            Conteúdo prático em pílulas — SEO, performance, GA4, automações e mais. Sem enrolação.
-          </p>
-        </div>
+<div className="text-center mb-8 text-white">
+  <motion.h2
+    initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
+    whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    className="text-3xl font-bold"
+  >
+    Aprenda rápido. Aplique hoje.
+  </motion.h2>
+  <p className="mt-2 max-w-2xl mx-auto opacity-90">
+    Conteúdo prático em pílulas — SEO, performance, GA4, automações e mais. Sem enrolação.
+  </p>
+</div>
+
+
 
         {/* Nav de tópicos (scrollable no mobile, sem fundo preenchido no ativo) */}
         <div className="mb-6">
@@ -191,7 +199,6 @@ export default function EducationSection() {
                   className={[
                     'snap-start shrink-0 inline-flex items-center gap-2',
                     'min-h-11 px-3 py-2 rounded-xl text-sm border transition-all',
-                    // ativo: apenas borda e destaque sutil (sem preencher o fundo)
                     activeTab
                       ? 'bg-white text-primary border-accent ring-2 ring-accent/40'
                       : 'bg-white text-primary border-gray-200 hover:border-accent hover:ring-1 hover:ring-accent/30'
