@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-// Tipos
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import React from 'react'
+/* ---------- Tipos ---------- */
 type Post = {
   slug: string;
   title: string;
@@ -62,29 +62,57 @@ const POSTS: Post[] = [
 const CATEGORIES = ['Todos', 'GA4 & SEO', 'E-commerce', 'Automações', 'MVP & Startup'] as const;
 type Category = (typeof CATEGORIES)[number];
 
+/* ---------- Utils ---------- */
+function useDebouncedValue<T>(value: T, delay = 250) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return v;
+}
+
+function useLockBodyScroll(locked: boolean) {
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = locked ? 'hidden' : original;
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, [locked]);
+}
+
+/* ---------- Página ---------- */
 export default function BlogPage() {
-  const [query, setQuery] = useState('');
+  const [rawQuery, setRawQuery] = useState('');
+  const query = useDebouncedValue(rawQuery, 250);
   const [category, setCategory] = useState<Category>('Todos');
   const [tag, setTag] = useState<string>('Todos');
   const [activePost, setActivePost] = useState<Post | null>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   const categoryOptions = useMemo<string[]>(() => [...CATEGORIES], []);
-
   const tagsAll = useMemo(() => {
     const t = new Set<string>();
     POSTS.forEach((p) => p.tags.forEach((x) => t.add(x)));
     return ['Todos', ...Array.from(t).sort()];
   }, []);
 
-  const featured = useMemo(() => POSTS.find((p) => p.featured), []);
-  const rest = useMemo(() => POSTS.filter((p) => !p.featured), []);
+  // dividir destaque/normal só uma vez
+  const { featured, rest } = useMemo(() => {
+    const f = POSTS.find((p) => p.featured) || null;
+    const r = POSTS.filter((p) => !p.featured);
+    return { featured: f, rest: r };
+  }, []);
+
+  // lista base na ordem: destaque -> demais
+  const baseList = useMemo(() => (featured ? [featured, ...rest] : rest), [featured, rest]);
 
   const filtered = useMemo(() => {
-    const list = [featured, ...rest].filter(Boolean) as Post[];
-    return list.filter((p) => {
+    const q = query.trim().toLowerCase();
+    return baseList.filter((p) => {
       const matchCat = category === 'Todos' || p.category === category;
       const matchTag = tag === 'Todos' || p.tags.includes(tag);
-      const q = query.trim().toLowerCase();
       const matchQ =
         !q ||
         p.title.toLowerCase().includes(q) ||
@@ -92,20 +120,29 @@ export default function BlogPage() {
         p.tags.some((t) => t.toLowerCase().includes(q));
       return matchCat && matchTag && matchQ;
     });
-  }, [featured, rest, category, tag, query]);
+  }, [baseList, category, tag, query]);
+
+  // Fechar com ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActivePost(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <main
       className="pt-20 pb-12 relative min-h-screen bg-fixed bg-center bg-cover bg-no-repeat"
       style={{ backgroundImage: "url('/backgroundblog.png')" }}
     >
-      {/* Overlay escuro para legibilidade sobre o background */}
-      <div className="pointer-events-none absolute inset-0 bg-black/55"></div>
+      {/* Overlay para legibilidade no fundo */}
+      <div className="pointer-events-none absolute inset-0 bg-black/55" />
 
-      {/* Conteúdo acima do overlay */}
+      {/* Conteúdo */}
       <div className="relative z-10">
         <div className="max-w-6xl mx-auto px-4">
-          {/* Hero (sem bg próprio, texto claro para contrastar com o fundo da página) */}
+          {/* Hero */}
           <section id="topo" className="mb-8 scroll-mt-20">
             <h1 className="text-3xl md:text-4xl font-bold text-white">Blog</h1>
             <p className="mt-2 max-w-2xl text-white/90">
@@ -121,14 +158,15 @@ export default function BlogPage() {
                 <label htmlFor="q" className="sr-only">Buscar</label>
                 <input
                   id="q"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  value={rawQuery}
+                  onChange={(e) => setRawQuery(e.target.value)}
                   placeholder="Buscar por título, tag ou assunto…"
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                  enterKeyHint="search"
                 />
               </div>
               <div className="hidden md:flex gap-3">
-                <CategorySelect value={category} onChange={(v) => setCategory(v)} />
+                <CategorySelect value={category} onChange={setCategory} />
                 <TagSelect value={tag} onChange={setTag} options={tagsAll} />
               </div>
             </div>
@@ -140,10 +178,16 @@ export default function BlogPage() {
             </div>
           </section>
 
-          {/* Grid unificado (todos os cards do mesmo tamanho) */}
+          {/* Grid */}
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((post, i) => (
-              <PostCard key={post.slug} post={post} index={i} onOpen={() => setActivePost(post)} />
+              <PostCard
+                key={post.slug}
+                post={post}
+                index={i}
+                onOpen={() => setActivePost(post)}
+                prefersReducedMotion={prefersReducedMotion}
+              />
             ))}
           </section>
 
@@ -157,34 +201,48 @@ export default function BlogPage() {
       </div>
 
       {/* Modal */}
-      <ArticleModal post={activePost} onClose={() => setActivePost(null)} />
+      <ArticleModal post={activePost} onClose={() => setActivePost(null)} prefersReducedMotion={prefersReducedMotion} />
     </main>
   );
 }
 
 /* ---------- Components ---------- */
 
-function CategoryBadge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded-full bg-accent/10 text-accent px-2.5 py-1 text-xs font-medium">
-      {children}
-    </span>
-  );
-}
+const CategoryBadge = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex items-center rounded-full bg-accent/10 text-accent px-2.5 py-1 text-xs font-medium">
+    {children}
+  </span>
+);
 
-function PostCard({ post, index, onOpen }: { post: Post; index: number; onOpen: () => void }) {
+const PostCard = React.memo(function PostCard({
+  post,
+  index,
+  onOpen,
+  prefersReducedMotion,
+}: {
+  post: Post;
+  index: number;
+  onOpen: () => void;
+  prefersReducedMotion: boolean;
+}) {
   return (
     <motion.article
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+      whileInView={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+      transition={prefersReducedMotion ? undefined : { delay: index * 0.05 }}
       viewport={{ once: true }}
       className="rounded-xl overflow-hidden border border-gray-200 bg-white flex flex-col h-full"
     >
-      {/* Área da imagem com altura fixa e sem corte */}
+      {/* Imagem fixa, sem recorte no mobile */}
       <div className="h-40 md:h-48 bg-gray-50 flex items-center justify-center">
         {post.cover ? (
-          <img src={post.cover} alt="cover" className="h-full w-full object-contain" />
+          <img
+            src={post.cover}
+            alt="cover"
+            className="h-full w-full object-contain"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <div className="h-full w-full" />
         )}
@@ -219,7 +277,9 @@ function PostCard({ post, index, onOpen }: { post: Post; index: number; onOpen: 
       </div>
     </motion.article>
   );
-}
+});
+
+/* ---------- Filtros ---------- */
 
 function CategorySelect({ value, onChange }: { value: Category; onChange: (v: Category) => void }) {
   return (
@@ -281,77 +341,105 @@ function Pills({ items, value, onChange }: { items: string[]; value: string; onC
 
 /* ---------- Modal ---------- */
 
-function useLockBodyScroll(locked: boolean) {
-  useEffect(() => {
-    const original = document.body.style.overflow;
-    document.body.style.overflow = locked ? 'hidden' : original;
-    return () => {
-      document.body.style.overflow = original;
-    };
-  }, [locked]);
-}
-
-function ArticleModal({ post, onClose }: { post: Post | null; onClose: () => void }) {
+function ArticleModal({
+  post,
+  onClose,
+  prefersReducedMotion,
+}: {
+  post: Post | null;
+  onClose: () => void;
+  prefersReducedMotion: boolean;
+}) {
   useLockBodyScroll(!!post);
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
+
+  // foco no título quando abrir
+  useEffect(() => {
+    if (post) setTimeout(() => titleRef.current?.focus(), 0);
+  }, [post]);
+
+  const handleBackdrop = useCallback(
+    (e: React.MouseEvent) => {
+      // fecha só se clicar no backdrop
+      if (e.currentTarget === e.target) onClose();
+    },
+    [onClose]
+  );
 
   return (
     <AnimatePresence>
       {post && (
         <motion.div
-          className="fixed inset-0 z-[80]"
+          className="fixed inset-0 z-[80] flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           aria-modal="true"
           role="dialog"
+          onMouseDown={handleBackdrop}
         >
-          {/* Backdrop */}
-          <motion.button
-            className="absolute inset-0 bg-black/50"
-            onClick={onClose}
-            aria-label="Fechar"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          />
+          {/* Backdrop clicável */}
+          <div className="absolute inset-0 bg-black/55" />
 
-          {/* Card */}
+          {/* Card: full-screen mobile, janela central no desktop */}
           <motion.div
-            className="absolute inset-x-0 md:inset-auto md:right-8 md:left-8 top-16 bottom-8 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden flex flex-col"
-            initial={{ y: 24, opacity: 0 }}
+            className="
+              relative w-[96%] md:w-auto md:max-w-4xl
+              h-[92dvh] md:h-[80vh]
+              bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden flex flex-col
+            "
+            initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            transition={prefersReducedMotion ? undefined : { type: 'spring', stiffness: 300, damping: 30 }}
+            role="document"
           >
-            {/* Header */}
-            <div className="p-4 md:p-5 border-b border-gray-100 flex items-start justify-between gap-4">
-              <div>
-                <div className="mb-1"><CategoryBadge>{post.category}</CategoryBadge></div>
-                <h2 className="text-xl md:text-2xl font-bold text-primary">{post.title}</h2>
+            {/* Header sticky com botão grande de fechar */}
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-100">
+              <div className="p-3 md:p-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="mb-1">
+                    <CategoryBadge>{post.category}</CategoryBadge>
+                  </div>
+                  <h2
+                    ref={titleRef}
+                    tabIndex={-1}
+                    className="text-lg md:text-2xl font-bold text-primary focus:outline-none"
+                    id="article-title"
+                  >
+                    {post.title}
+                  </h2>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold border border-gray-200 hover:bg-gray-50 active:scale-[.98]"
+                  aria-label="Fechar"
+                >
+                  Fechar
+                </button>
               </div>
-              <button
-                onClick={onClose}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium border border-gray-200 hover:bg-gray-50"
-                aria-label="Fechar"
-              >
-                Fechar
-              </button>
             </div>
 
-            {/* Cover opcional (sem corte) */}
+            {/* Cover (opcional) — height auto, sem crop */}
             {post.cover && (
-              <div className="p-0 m-0">
-                <img src={post.cover} alt="cover" className="w-full h-auto object-contain" />
+              <div className="p-0 m-0 border-b border-gray-100">
+                <img
+                  src={post.cover}
+                  alt="cover"
+                  className="w-full h-auto object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
             )}
 
-            {/* Conteúdo */}
-            <div className="p-4 md:p-6 overflow-y-auto">
+            {/* Conteúdo scrollável */}
+            <div className="flex-1 overflow-y-auto will-change-auto px-4 md:px-6 py-4">
               <p className="text-secondary leading-relaxed whitespace-pre-line">{post.content}</p>
             </div>
 
-            {/* Rodapé simples (sem link) */}
-            <div className="p-4 md:p-5 border-t border-gray-100 flex items-center justify-start">
+            {/* Rodapé fixo no mobile para boa ergonomia */}
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-gray-100 px-4 md:px-6 py-3">
               <div className="text-xs text-secondary">*Resumo explicativo baseado no tema do artigo.</div>
             </div>
           </motion.div>

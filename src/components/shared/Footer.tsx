@@ -30,7 +30,7 @@ export default function Footer() {
               Desenvolvimento web, automações e software sob medida com foco em performance, SEO e mensuração via GA4.
             </p>
             <p className="mt-4 text-sm text-light/70">
-              📍 Aracaju-SE • Atendemos em todo o Brasil
+              📍 Av. Dr. Edelzio Vieira de Melo, 09 - São José, Aracaju - SE, 49015-310 • Atendemos em todo o Brasil
             </p>
             <a
               href={waHref}

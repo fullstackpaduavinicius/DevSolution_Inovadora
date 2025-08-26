@@ -1,12 +1,28 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
-  FaSearch, FaTachometerAlt, FaChartLine, FaRobot,
-  FaShoppingCart, FaRocket, FaWhatsapp, FaCheckCircle
+  FaSearch,
+  FaTachometerAlt,
+  FaChartLine,
+  FaRobot,
+  FaShoppingCart,
+  FaRocket,
+  FaWhatsapp,
+  FaCheckCircle,
 } from 'react-icons/fa';
+
+/**
+ * EducationSection — versão aprimorada
+ * Melhorias:
+ * - Acessibilidade: tabs com teclado (setas, Home/End), ARIA completa
+ * - UX: persiste aba ativa via hash (#seo etc.) e restaura on load
+ * - GA4: eventos ao trocar de aba e ao usar calculadora
+ * - Cores/contraste: cabeçalho em texto primário sobre overlay claro
+ * - Robustez: validação dos inputs (NaN-safe), limites e formatação
+ */
 
 type Topic = {
   id: 'seo' | 'perf' | 'ga4' | 'auto' | 'ecom' | 'mvp';
@@ -28,18 +44,9 @@ const TOPICS: Topic[] = [
     icon: <FaSearch className="text-accent" />,
     name: 'SEO',
     headline: 'Seja encontrado por quem já está procurando você',
-    intro:
-      'SEO técnico + conteúdo certo colocam sua página na frente quando o cliente está com a intenção de compra alta.',
-    why: [
-      'Tráfego orgânico previsível a médio prazo',
-      'Custo por lead menor que mídia paga',
-      'Autoridade de marca no longo prazo',
-    ],
-    steps: [
-      'Corrigir títulos, meta tags e headings',
-      'Dados estruturados e sitemap/robots',
-      'Conteúdo que responde dúvidas (intenção!)',
-    ],
+    intro: 'SEO técnico + conteúdo certo colocam sua página na frente quando o cliente está com a intenção de compra alta.',
+    why: ['Tráfego orgânico previsível a médio prazo', 'Custo por lead menor que mídia paga', 'Autoridade de marca no longo prazo'],
+    steps: ['Corrigir títulos, meta tags e headings', 'Dados estruturados e sitemap/robots', 'Conteúdo que responde dúvidas (intenção!)'],
     metrics: ['Impressões', 'CTR orgânico', 'Posição média', 'Leads orgânicos'],
     myth: '“SEO é só mexer em palavras-chave.”',
     fact: 'SEO é experiência + técnica + conteúdo. Velocidade e UX contam (muito).',
@@ -50,14 +57,9 @@ const TOPICS: Topic[] = [
     icon: <FaTachometerAlt className="text-accent" />,
     name: 'Performance',
     headline: 'Velocidade é conversão',
-    intro:
-      'Páginas rápidas reduzem rejeição, aumentam o tempo de sessão e melhoram posições no Google.',
+    intro: 'Páginas rápidas reduzem rejeição, aumentam o tempo de sessão e melhoram posições no Google.',
     why: ['Mais conversões', 'Melhor SEO', 'Experiência mobile superior'],
-    steps: [
-      'Imagens otimizadas/modernas (WebP/AVIF)',
-      'Code-split e lazy loading',
-      'Requisições e scripts mínimos',
-    ],
+    steps: ['Imagens otimizadas/modernas (WebP/AVIF)', 'Code-split e lazy loading', 'Requisições e scripts mínimos'],
     metrics: ['Lighthouse', 'LCP', 'CLS', 'Tempo até interação'],
     myth: '“Rodou 100 no Lighthouse, acabou.”',
     fact: 'O objetivo é consistência real no tráfego; monitore com usuários de verdade.',
@@ -68,14 +70,9 @@ const TOPICS: Topic[] = [
     icon: <FaChartLine className="text-accent" />,
     name: 'GA4',
     headline: 'Medição confiável para decisões melhores',
-    intro:
-      'Sem eventos bem definidos, você otimiza no escuro. GA4 conecta comportamento a resultados.',
+    intro: 'Sem eventos bem definidos, você otimiza no escuro. GA4 conecta comportamento a resultados.',
     why: ['Funil claro', 'Atribuição por campanha', 'ROI visível'],
-    steps: [
-      'Mapa de eventos (cliques, scroll, envio de lead)',
-      'Parâmetros/UTMs consistentes',
-      'Relatórios recorrentes',
-    ],
+    steps: ['Mapa de eventos (cliques, scroll, envio de lead)', 'Parâmetros/UTMs consistentes', 'Relatórios recorrentes'],
     metrics: ['Eventos', 'Conversões', 'CAC', 'LTV', 'ROAS'],
     myth: '“É só instalar e pronto.”',
     fact: 'O valor vem do plano de medição + qualidade dos eventos.',
@@ -86,14 +83,9 @@ const TOPICS: Topic[] = [
     icon: <FaRobot className="text-accent" />,
     name: 'Automações',
     headline: 'Tempo do time focado no que realmente importa',
-    intro:
-      'Bots e integrações tiram tarefas repetitivas do caminho e reduzem erros manuais.',
+    intro: 'Bots e integrações tiram tarefas repetitivas do caminho e reduzem erros manuais.',
     why: ['Menos custo operacional', 'Menos erro humano', 'Escala com time enxuto'],
-    steps: [
-      'Mapear processos (BPMN light)',
-      'Workers/Webhooks com logs',
-      'Alertas e relatórios automáticos',
-    ],
+    steps: ['Mapear processos (BPMN light)', 'Workers/Webhooks com logs', 'Alertas e relatórios automáticos'],
     metrics: ['Horas poupadas', 'SLA de tarefas', 'Erros/incidentes'],
     myth: '“Automação é só para empresas grandes.”',
     fact: 'Começa pequeno (POC) e evolui. Ganhos aparecem rápido.',
@@ -104,8 +96,7 @@ const TOPICS: Topic[] = [
     icon: <FaShoppingCart className="text-accent" />,
     name: 'E-commerce',
     headline: 'Loja rápida, funil claro e pagamento sem atrito',
-    intro:
-      'UX + performance + métricas de funil levantam a taxa de conversão e reduzem custo por venda.',
+    intro: 'UX + performance + métricas de funil levantam a taxa de conversão e reduzem custo por venda.',
     why: ['Mais receita', 'Menos abandono', 'Dados para crescer'],
     steps: ['Checkout simples', 'Pix/Cartão integrados', 'Teste A/B de páginas chave'],
     metrics: ['Conversão', 'Ticket médio', 'Abandono de carrinho', 'ROAS'],
@@ -118,8 +109,7 @@ const TOPICS: Topic[] = [
     icon: <FaRocket className="text-accent" />,
     name: 'MVP',
     headline: 'Valide rápido, aprenda e escale com segurança',
-    intro:
-      'MVP enxuto com eventos de ativação/retenção para orientar o roadmap antes de investir pesado.',
+    intro: 'MVP enxuto com eventos de ativação/retenção para orientar o roadmap antes de investir pesado.',
     why: ['Tempo-to-market curto', 'Aprendizado rápido', 'Menos risco'],
     steps: ['Priorizar hipóteses', 'Protótipo navegável', 'Telemetria desde o dia 1'],
     metrics: ['Ativação', 'Retenção', 'Engajamento', 'NPS'],
@@ -130,19 +120,31 @@ const TOPICS: Topic[] = [
 ];
 
 export default function EducationSection() {
-  const [active, setActive] = useState<Topic['id']>('seo');
+  // Aba ativa baseada no hash inicial
+  const getInitialTab = (): Topic['id'] => {
+    if (typeof window === 'undefined') return 'seo';
+    const id = window.location.hash.replace('#', '') as Topic['id'];
+    return TOPICS.some((t) => t.id === id) ? id : 'seo';
+  };
+
+  const [active, setActive] = useState<Topic['id']>(getInitialTab);
 
   // Mini calculadora — simples e didática
   const [visits, setVisits] = useState(5000);
   const [conv, setConv] = useState(1.5); // %
-  const [lift, setLift] = useState(20);  // %
-  const prefersReducedMotion = useReducedMotion();
+  const [lift, setLift] = useState(20); // %
 
+  const prefersReducedMotion = useReducedMotion();
   const topic = useMemo(() => TOPICS.find((t) => t.id === active)!, [active]);
 
-  const baselineLeads = useMemo(() => Math.round((visits * (conv / 100))), [visits, conv]);
+  const saneNumber = (n: unknown, fallback = 0) => {
+    const v = typeof n === 'number' ? n : Number(n);
+    return Number.isFinite(v) ? v : fallback;
+  };
+
+  const baselineLeads = useMemo(() => Math.round(saneNumber(visits, 0) * (saneNumber(conv, 0) / 100)), [visits, conv]);
   const improvedLeads = useMemo(
-    () => Math.round((visits * ((conv * (1 + lift / 100)) / 100))),
+    () => Math.round(saneNumber(visits, 0) * ((saneNumber(conv, 0) * (1 + saneNumber(lift, 0) / 100)) / 100)),
     [visits, conv, lift]
   );
   const delta = improvedLeads - baselineLeads;
@@ -154,54 +156,92 @@ export default function EducationSection() {
     return `https://wa.me/${phone}?text=${text}&${utms}`;
   }, []);
 
+  // Persistência de hash ao trocar de aba + GA4
+  useEffect(() => {
+    try {
+      window.history.replaceState(null, '', `#${active}`);
+      // @ts-ignore
+      window.gtag?.('event', 'tab_change', { section: 'education', tab: active });
+    } catch {}
+  }, [active]);
+
+  // Habilita navegação por teclado nas tabs
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const onKeyDownTabs = (e: React.KeyboardEvent) => {
+    const current = active;
+    const idx = TOPICS.findIndex((t) => t.id === current);
+    const last = TOPICS.length - 1;
+    let nextIdx = idx;
+    if (e.key === 'ArrowRight') nextIdx = idx === last ? 0 : idx + 1;
+    if (e.key === 'ArrowLeft') nextIdx = idx === 0 ? last : idx - 1;
+    if (e.key === 'Home') nextIdx = 0;
+    if (e.key === 'End') nextIdx = last;
+    if (nextIdx !== idx) {
+      e.preventDefault();
+      setActive(TOPICS[nextIdx].id);
+      const btn = tabsRef.current?.querySelector<HTMLButtonElement>(`button[data-tab='${TOPICS[nextIdx].id}']`);
+      btn?.focus();
+    }
+  };
+
+  // GA4: eventos na calculadora
+  useEffect(() => {
+    try {
+      // @ts-ignore
+      window.gtag?.('event', 'calc_update', { section: 'education', visits, conv, lift });
+    } catch {}
+  }, [visits, conv, lift]);
+
   return (
     <section
       className="relative py-14 bg-center bg-cover bg-no-repeat"
       style={{ backgroundImage: "url('/background1.png')" }}
     >
       {/* Overlay para contraste e legibilidade */}
-      <div className="absolute inset-0 bg-white/85"></div>
+      <div className="absolute inset-0 bg-white/85" aria-hidden />
 
       <div className="relative max-w-6xl mx-auto px-4">
         {/* Header */}
-<div className="text-center mb-8 text-white">
-  <motion.h2
-    initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
-    whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    className="text-3xl font-bold"
-  >
-    Aprenda rápido. Aplique hoje.
-  </motion.h2>
-  <p className="mt-2 max-w-2xl mx-auto opacity-90">
-    Conteúdo prático em pílulas — SEO, performance, GA4, automações e mais. Sem enrolação.
-  </p>
-</div>
+        <div className="text-center mb-8">
+          <motion.h2
+            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
+            whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-3xl font-bold text-white"
+          >
+            Aprenda rápido. Aplique hoje.
+          </motion.h2>
+          <p className="mt-2 max-w-2xl mx-auto text-white">
+            Conteúdo prático em pílulas — SEO, performance, GA4, automações e mais. Sem enrolação.
+          </p>
+        </div>
 
-
-
-        {/* Nav de tópicos (scrollable no mobile, sem fundo preenchido no ativo) */}
+        {/* Nav de tópicos */}
         <div className="mb-6">
           <div
+            ref={tabsRef}
             className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory touch-pan-x"
             role="tablist"
             aria-label="Conteúdos educativos"
+            onKeyDown={onKeyDownTabs}
           >
             {TOPICS.map((t) => {
               const activeTab = t.id === active;
               return (
                 <button
                   key={t.id}
+                  data-tab={t.id}
                   onClick={() => setActive(t.id)}
                   role="tab"
                   aria-selected={activeTab}
                   aria-controls={`panel-${t.id}`}
+                  id={`tab-${t.id}`}
                   className={[
                     'snap-start shrink-0 inline-flex items-center gap-2',
                     'min-h-11 px-3 py-2 rounded-xl text-sm border transition-all',
                     activeTab
                       ? 'bg-white text-primary border-accent ring-2 ring-accent/40'
-                      : 'bg-white text-primary border-gray-200 hover:border-accent hover:ring-1 hover:ring-accent/30'
+                      : 'bg-white text-primary border-gray-200 hover:border-accent hover:ring-1 hover:ring-accent/30',
                   ].join(' ')}
                 >
                   <span className="text-base">{t.icon}</span>
@@ -220,7 +260,7 @@ export default function EducationSection() {
           className="grid grid-cols-1 lg:grid-cols-3 gap-6"
           role="tabpanel"
           id={`panel-${topic.id}`}
-          aria-labelledby={topic.id}
+          aria-labelledby={`tab-${topic.id}`}
         >
           {/* Bloco principal */}
           <div className="lg:col-span-2 bg-light rounded-2xl p-5 shadow-sm">
@@ -288,25 +328,26 @@ export default function EducationSection() {
           <div className="flex flex-col gap-6">
             <div className="rounded-2xl border p-5 bg-white shadow-sm">
               <h4 className="font-semibold text-primary mb-1">Calculadora de impacto</h4>
-              <p className="text-secondary text-sm mb-3">
-                Estime leads extras ao melhorar conversão (ex.: com performance/UX/SEO).
-              </p>
+              <p className="text-secondary text-sm mb-3">Estime leads extras ao melhorar conversão (ex.: com performance/UX/SEO).</p>
 
-              <label className="block text-sm mb-1">Visitas/mês</label>
+              <label htmlFor="visits" className="block text-sm mb-1">Visitas/mês</label>
               <input
+                id="visits"
                 type="number"
                 inputMode="numeric"
-                pattern="[0-9]*"
                 min={0}
                 className="w-full rounded-lg border px-3 py-2 mb-3"
                 value={visits}
                 onChange={(e) => setVisits(Math.max(0, Number(e.target.value || 0)))}
+                aria-describedby="visits-help"
               />
+              <p id="visits-help" className="text-xs text-secondary mb-3">Use seu relatório de tráfego atual como referência.</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm mb-1">Taxa atual (%)</label>
+                  <label htmlFor="conv" className="block text-sm mb-1">Taxa atual (%)</label>
                   <input
+                    id="conv"
                     type="number"
                     inputMode="decimal"
                     step="0.1"
@@ -317,12 +358,12 @@ export default function EducationSection() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm mb-1">Melhoria (%)</label>
+                  <label htmlFor="lift" className="block text-sm mb-1">Melhoria (%)</label>
                   <input
+                    id="lift"
                     type="number"
                     inputMode="numeric"
-                    pattern="[0-9]*"
-                    step="1"
+                    step={1}
                     min={0}
                     className="w-full rounded-lg border px-3 py-2"
                     value={lift}
