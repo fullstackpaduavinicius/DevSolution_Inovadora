@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef, memo } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import React from 'react'
+
 /* ---------- Tipos ---------- */
 type Post = {
   slug: string;
@@ -89,7 +89,7 @@ export default function BlogPage() {
   const [category, setCategory] = useState<Category>('Todos');
   const [tag, setTag] = useState<string>('Todos');
   const [activePost, setActivePost] = useState<Post | null>(null);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion(); // boolean | null
 
   const categoryOptions = useMemo<string[]>(() => [...CATEGORIES], []);
   const tagsAll = useMemo(() => {
@@ -98,14 +98,12 @@ export default function BlogPage() {
     return ['Todos', ...Array.from(t).sort()];
   }, []);
 
-  // dividir destaque/normal só uma vez
   const { featured, rest } = useMemo(() => {
     const f = POSTS.find((p) => p.featured) || null;
     const r = POSTS.filter((p) => !p.featured);
     return { featured: f, rest: r };
   }, []);
 
-  // lista base na ordem: destaque -> demais
   const baseList = useMemo(() => (featured ? [featured, ...rest] : rest), [featured, rest]);
 
   const filtered = useMemo(() => {
@@ -136,13 +134,10 @@ export default function BlogPage() {
       className="pt-20 pb-12 relative min-h-screen bg-fixed bg-center bg-cover bg-no-repeat"
       style={{ backgroundImage: "url('/backgroundblog.png')" }}
     >
-      {/* Overlay para legibilidade no fundo */}
       <div className="pointer-events-none absolute inset-0 bg-black/55" />
 
-      {/* Conteúdo */}
       <div className="relative z-10">
         <div className="max-w-6xl mx-auto px-4">
-          {/* Hero */}
           <section id="topo" className="mb-8 scroll-mt-20">
             <h1 className="text-3xl md:text-4xl font-bold text-white">Blog</h1>
             <p className="mt-2 max-w-2xl text-white/90">
@@ -151,7 +146,6 @@ export default function BlogPage() {
             </p>
           </section>
 
-          {/* Busca e filtros */}
           <section className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between mb-8">
             <div className="flex flex-1 gap-3">
               <div className="flex-1">
@@ -171,14 +165,12 @@ export default function BlogPage() {
               </div>
             </div>
 
-            {/* Pílulas (mobile) */}
             <div className="md:hidden flex gap-2 overflow-x-auto no-scrollbar">
               <Pills items={categoryOptions} value={category} onChange={(v) => setCategory(v as Category)} />
               <Pills items={tagsAll} value={tag} onChange={setTag} />
             </div>
           </section>
 
-          {/* Grid */}
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((post, i) => (
               <PostCard
@@ -186,12 +178,11 @@ export default function BlogPage() {
                 post={post}
                 index={i}
                 onOpen={() => setActivePost(post)}
-                prefersReducedMotion={prefersReducedMotion}
+                prefersReducedMotion={!!prefersReducedMotion}
               />
             ))}
           </section>
 
-          {/* Vazio */}
           {filtered.length === 0 && (
             <div className="mt-16 text-center">
               <p className="text-white/80">Nenhum artigo encontrado. Tente outros filtros ou termos.</p>
@@ -200,8 +191,11 @@ export default function BlogPage() {
         </div>
       </div>
 
-      {/* Modal */}
-      <ArticleModal post={activePost} onClose={() => setActivePost(null)} prefersReducedMotion={prefersReducedMotion} />
+      <ArticleModal
+        post={activePost}
+        onClose={() => setActivePost(null)}
+        prefersReducedMotion={!!prefersReducedMotion}
+      />
     </main>
   );
 }
@@ -214,7 +208,7 @@ const CategoryBadge = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
-const PostCard = React.memo(function PostCard({
+const PostCard = memo(function PostCard({
   post,
   index,
   onOpen,
@@ -228,12 +222,11 @@ const PostCard = React.memo(function PostCard({
   return (
     <motion.article
       initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-      whileInView={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
       transition={prefersReducedMotion ? undefined : { delay: index * 0.05 }}
       viewport={{ once: true }}
       className="rounded-xl overflow-hidden border border-gray-200 bg-white flex flex-col h-full"
     >
-      {/* Imagem fixa, sem recorte no mobile */}
       <div className="h-40 md:h-48 bg-gray-50 flex items-center justify-center">
         {post.cover ? (
           <img
@@ -248,7 +241,6 @@ const PostCard = React.memo(function PostCard({
         )}
       </div>
 
-      {/* Conteúdo */}
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-center gap-3 mb-2">
           <CategoryBadge>{post.category}</CategoryBadge>
@@ -353,14 +345,12 @@ function ArticleModal({
   useLockBodyScroll(!!post);
   const titleRef = useRef<HTMLHeadingElement | null>(null);
 
-  // foco no título quando abrir
   useEffect(() => {
     if (post) setTimeout(() => titleRef.current?.focus(), 0);
   }, [post]);
 
   const handleBackdrop = useCallback(
     (e: React.MouseEvent) => {
-      // fecha só se clicar no backdrop
       if (e.currentTarget === e.target) onClose();
     },
     [onClose]
@@ -378,10 +368,8 @@ function ArticleModal({
           role="dialog"
           onMouseDown={handleBackdrop}
         >
-          {/* Backdrop clicável */}
           <div className="absolute inset-0 bg-black/55" />
 
-          {/* Card: full-screen mobile, janela central no desktop */}
           <motion.div
             className="
               relative w-[96%] md:w-auto md:max-w-4xl
@@ -394,7 +382,6 @@ function ArticleModal({
             transition={prefersReducedMotion ? undefined : { type: 'spring', stiffness: 300, damping: 30 }}
             role="document"
           >
-            {/* Header sticky com botão grande de fechar */}
             <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-100">
               <div className="p-3 md:p-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -420,7 +407,6 @@ function ArticleModal({
               </div>
             </div>
 
-            {/* Cover (opcional) — height auto, sem crop */}
             {post.cover && (
               <div className="p-0 m-0 border-b border-gray-100">
                 <img
@@ -433,12 +419,10 @@ function ArticleModal({
               </div>
             )}
 
-            {/* Conteúdo scrollável */}
             <div className="flex-1 overflow-y-auto will-change-auto px-4 md:px-6 py-4">
               <p className="text-secondary leading-relaxed whitespace-pre-line">{post.content}</p>
             </div>
 
-            {/* Rodapé fixo no mobile para boa ergonomia */}
             <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-gray-100 px-4 md:px-6 py-3">
               <div className="text-xs text-secondary">*Resumo explicativo baseado no tema do artigo.</div>
             </div>
